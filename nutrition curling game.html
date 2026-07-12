@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>건강급식 컬링 🚚 | 전주서일초</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#CDE8F8; --panel:#FFFFFF; --ink:#2B3A55; --ink-soft:#5A6B85;
+  --ring-blue:#7DD1F7; --ring-blue-deep:#39B4EE;
+  --orange:#F7A325; --warn:#FFC53D; --warn-deep:#E8A400;
+  --safe:#6BA84F; --safe-deep:#4F8A36;
+  --pink:#F27E9B;
+  --t1:#E45B5B; --t2:#4A8FDD; --t3:#57A85A; --t4:#9A67C6;
+  --radius:18px;
+  --shadow:0 6px 18px rgba(43,58,85,.12);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Gowun Dodum','Noto Sans KR',sans-serif;
+  background:var(--bg);
+  background-image:radial-gradient(circle at 12% 18%, rgba(255,255,255,.55) 0 42px, transparent 43px),
+                   radial-gradient(circle at 88% 72%, rgba(255,255,255,.45) 0 60px, transparent 61px);
+  color:var(--ink);
+  min-height:100%;
+  overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,.jua{font-family:'Jua','Gowun Dodum',sans-serif; font-weight:400;}
+
+/* ── 헤더 ─────────────────────────── */
+header{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:14px 22px; max-width:1280px; margin:0 auto;
+}
+header .logo{font-size:30px; letter-spacing:1px; display:flex; align-items:center; gap:10px;}
+header .logo .truck{display:inline-block; animation:drive 3.2s ease-in-out infinite;}
+@keyframes drive{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+header .sub{font-size:13px; color:var(--ink-soft);}
+header .spacer{flex:1;}
+.btn{
+  font-family:'Jua',sans-serif; font-size:15px; border:none; cursor:pointer;
+  padding:9px 16px; border-radius:999px; color:#fff; background:var(--ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.15); transition:transform .08s;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(1px);}
+.btn.ghost{background:#fff; color:var(--ink); border:2px solid var(--ink);}
+.btn.orange{background:var(--orange);}
+.btn.pink{background:var(--pink);}
+.btn.green{background:var(--safe);}
+.btn.big{font-size:19px; padding:13px 30px;}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.btn:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--ring-blue-deep); outline-offset:2px;}
+
+/* ── 레이아웃 ─────────────────────── */
+main{
+  max-width:1280px; margin:0 auto 40px; padding:0 18px;
+  display:grid; grid-template-columns:minmax(360px, 560px) 1fr; gap:20px; align-items:start;
+}
+@media (max-width:980px){ main{grid-template-columns:1fr;} }
+
+.board-wrap{
+  background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:12px; position:relative;
+}
+canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-action:none; cursor:crosshair;}
+.hint{
+  text-align:center; font-size:13px; color:var(--ink-soft); padding:8px 4px 2px;
+}
+.hint b{color:var(--ink);}
+
+/* ── 팀 패널 ─────────────────────── */
+.side{display:flex; flex-direction:column; gap:14px;}
+.turn-banner{
+  background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:12px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.turn-banner .who{font-family:'Jua'; font-size:22px;}
+.turn-banner .end-info{margin-left:auto; font-size:13px; color:var(--ink-soft);}
+.teams{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:560px){ .teams{grid-template-columns:1fr;} }
+.team-card{
+  background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:12px 14px; border:3px solid transparent; transition:border-color .2s, transform .2s;
+  position:relative; overflow:hidden;
+}
+.team-card.active{border-color:var(--tc); transform:translateY(-2px);}
+.team-card.done::after{
+  content:'식판 완성! 🎉'; position:absolute; top:10px; right:-34px; transform:rotate(35deg);
+  background:var(--pink); color:#fff; font-family:'Jua'; font-size:12px; padding:3px 38px;
+}
+.team-head{display:flex; align-items:center; gap:8px;}
+.team-dot{width:16px; height:16px; border-radius:50%; background:var(--tc); flex:none;}
+.team-name{font-family:'Jua'; font-size:18px;}
+.team-mile{margin-left:auto; font-size:13px; color:var(--ink-soft);}
+.team-mile b{font-family:'Jua'; font-size:18px; color:var(--tc);}
+.stones{display:flex; gap:3px; margin:6px 0 8px; font-size:15px;}
+.stones .used{opacity:.18; filter:grayscale(1);}
+.tray{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:5px;
+  background:#EDF2F7; border-radius:10px; padding:6px;
+}
+.slot{
+  background:#fff; border:1.5px dashed #B9C6D6; border-radius:8px;
+  min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:10px; color:#8CA0B8; text-align:center; padding:2px; line-height:1.25;
+}
+.slot .em{font-size:17px; line-height:1;}
+.slot.filled{border-style:solid; border-color:var(--tc); background:#FDFEFF; color:var(--ink);}
+.slot.filled .mile-tag{font-size:9px; color:var(--ink-soft);}
+
+/* ── 모달 ─────────────────────────── */
+.overlay{
+  position:fixed; inset:0; background:rgba(43,58,85,.45); backdrop-filter:blur(2px);
+  display:flex; align-items:center; justify-content:center; z-index:50; padding:16px;
+}
+.overlay.hidden{display:none;}
+.modal{
+  background:#fff; border-radius:22px; padding:26px 28px; max-width:640px; width:100%;
+  max-height:88vh; overflow:auto; box-shadow:0 18px 50px rgba(0,0,0,.25);
+  animation:pop .22s ease-out;
+}
+@keyframes pop{from{transform:scale(.92); opacity:0}to{transform:scale(1); opacity:1}}
+@media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} }
+.modal .eyebrow{
+  display:inline-block; font-family:'Jua'; font-size:13px; color:#fff; background:var(--ring-blue-deep);
+  border-radius:999px; padding:4px 14px; margin-bottom:10px;
+}
+.modal .eyebrow.mission{background:var(--orange);}
+.modal .eyebrow.eco{background:var(--safe);}
+.modal .eyebrow.warn{background:var(--warn-deep);}
+.modal h2{font-size:26px; line-height:1.35; margin-bottom:14px;}
+.modal p{line-height:1.7; margin-bottom:10px;}
+.opts{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+.opt-btn{
+  font-family:'Gowun Dodum'; font-size:17px; text-align:left; padding:13px 18px;
+  border-radius:14px; border:2px solid #D6E2EE; background:#F7FAFD; cursor:pointer; transition:.12s;
+}
+.opt-btn:hover{border-color:var(--ring-blue-deep); background:#EAF6FD;}
+.opt-btn.correct{border-color:var(--safe); background:#EAF6E7;}
+.opt-btn.wrong{border-color:var(--t1); background:#FDECEC;}
+.modal .actions{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+.big-emoji{font-size:56px; text-align:center; margin:6px 0 10px;}
+
+/* 카드 선택 */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:9px; margin-top:6px;}
+.cat-title{
+  grid-column:1/-1; font-family:'Jua'; font-size:15px; margin-top:8px;
+  color:var(--ink); display:flex; align-items:center; gap:8px;
+}
+.cat-title::after{content:''; flex:1; height:2px; background:#E5EDF5; border-radius:2px;}
+.food-card{
+  border:2px solid #D6E2EE; border-radius:14px; background:#FFFDF6; padding:10px 8px;
+  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; transition:.12s;
+}
+.food-card:hover{border-color:var(--orange); transform:translateY(-2px); box-shadow:0 5px 12px rgba(0,0,0,.08);}
+.food-card .em{font-size:30px;}
+.food-card .nm{font-size:13px; text-align:center; line-height:1.3;}
+.food-card .mi{font-family:'Jua'; font-size:12px; color:#fff; background:var(--ink); border-radius:999px; padding:1px 9px;}
+.food-card .mi.low{background:var(--safe);}
+.food-card .mi.mid{background:var(--orange);}
+.food-card .mi.high{background:var(--t1);}
+.food-card.disabled{opacity:.32; pointer-events:none; filter:grayscale(.6);}
+.reveal-card{
+  margin:10px auto; width:200px; border:3px solid var(--orange); border-radius:18px;
+  background:#FFF8E8; padding:18px 12px; text-align:center;
+}
+.reveal-card .em{font-size:52px;}
+.reveal-card .nm{font-family:'Jua'; font-size:20px; margin:6px 0 4px;}
+.reveal-card .mi{font-size:14px; color:var(--ink-soft);}
+
+/* 설정 화면 */
+.setup-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0;}
+@media (max-width:520px){.setup-grid{grid-template-columns:1fr;}}
+.setup-team{display:flex; align-items:center; gap:8px; background:#F5F9FC; border-radius:12px; padding:10px;}
+.setup-team input{
+  flex:1; min-width:0; font-family:'Jua'; font-size:16px; border:2px solid #D6E2EE; border-radius:10px;
+  padding:8px 10px; background:#fff; color:var(--ink);
+}
+
+/* 결과표 */
+table.result{width:100%; border-collapse:collapse; margin-top:10px; font-size:14px;}
+table.result th, table.result td{padding:8px 6px; text-align:center; border-bottom:1.5px solid #E5EDF5;}
+table.result th{font-family:'Jua'; font-weight:400; background:#F2F8FC;}
+table.result tr.win{background:#FFF6DF;}
+table.result .total{font-family:'Jua'; font-size:18px;}
+.winner-line{font-family:'Jua'; font-size:24px; text-align:center; margin:12px 0 4px;}
+
+/* 토스트 */
+#toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:#fff; font-family:'Jua'; font-size:16px;
+  padding:11px 24px; border-radius:999px; opacity:0; pointer-events:none;
+  transition:.25s; z-index:80; max-width:90vw; text-align:center;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* 폭죽 */
+.confetti{position:fixed; top:-14px; width:10px; height:14px; z-index:90; pointer-events:none;
+  animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg); opacity:.2;}}
+
+/* 모바일 최적화 */
+@media (max-width:620px){
+  header{padding:10px 12px; gap:8px;}
+  header .logo{font-size:22px;}
+  header .sub{display:none;}
+  .btn{font-size:13px; padding:7px 12px;}
+  main{padding:0 10px; gap:12px;}
+  .board-wrap{padding:8px;}
+  .hint{font-size:11px;}
+  .turn-banner{padding:9px 12px; position:sticky; top:6px; z-index:10;}
+  .turn-banner .who{font-size:18px;}
+  .modal{padding:18px 16px; border-radius:16px;}
+  .modal h2{font-size:20px;}
+  .opt-btn{font-size:15px; padding:11px 14px;}
+  .card-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:7px;}
+  .food-card .em{font-size:24px;} .food-card .nm{font-size:11px;}
+  table.result{font-size:12px;} table.result th,table.result td{padding:6px 3px;}
+  .btn.big{font-size:16px; padding:11px 20px;}
+}
+
+.rules h3{margin:14px 0 6px; font-size:18px; color:var(--ring-blue-deep);}
+.rules ul{padding-left:20px; line-height:1.8; font-size:15px;}
+footer{text-align:center; font-family:'Jua'; color:var(--ink-soft); padding:10px 0 26px; letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo jua"><span class="truck">🚚</span>건강급식 컬링</div>
+  <div class="sub">전주서일초 · 저탄소 환경급식 × 영양·식생활교육</div>
+  <div class="spacer"></div>
+  <button class="btn ghost" id="btnRules">❓ 게임 방법</button>
+  <button class="btn orange" id="btnRestart">🔄 다시 시작</button>
+  <button class="btn" id="btnFinish">🏁 게임 종료·점수 계산</button>
+</header>
+
+<main>
+  <div class="board-wrap">
+    <canvas id="board" width="620" height="940"></canvas>
+    <div class="hint">🖱️ 트럭을 <b>누른 채 아래로 당겼다 놓으면</b> 발사! 멀리 당길수록 세게 나가요.</div>
+  </div>
+
+  <div class="side">
+    <div class="turn-banner">
+      <span style="font-size:26px" id="turnTruck">🚚</span>
+      <span class="who" id="turnWho">-</span>
+      <span id="turnMsg" style="font-size:14px;color:var(--ink-soft)">트럭을 발사하세요!</span>
+      <span class="end-info" id="endInfo">1엔드</span>
+    </div>
+    <div class="teams" id="teams"></div>
+  </div>
+</main>
+
+<footer>siwon socool</footer>
+
+<div class="overlay hidden" id="overlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ══════════════════ 데이터 ══════════════════ */
+const TEAM_COLORS = ['#E45B5B','#4A8FDD','#57A85A','#9A67C6'];
+const STONES_PER_END = 6;
+
+// 식판 칸 (7칸: 국/찌개는 채소1 + 고기생선1)
+const SLOTS = [
+  {id:'rice',  label:'밥(곡류)',   cat:'곡류'},
+  {id:'soupV', label:'국·채소',    cat:'채소류'},
+  {id:'soupM', label:'국·고기생선', cat:'고기생선류'},
+  {id:'sideV', label:'채소 반찬',  cat:'채소류'},
+  {id:'kimchi',label:'김치',       cat:'김치'},
+  {id:'prot',  label:'고기생선달걀콩', cat:'고기생선류'},
+  {id:'dess',  label:'후식',       cat:'후식'},
+];
+const CAT_EMOJI = {'곡류':'🌾','채소류':'🥬','김치':'🥢','고기생선류':'🍖','후식':'🍓'};
+
+// 식재료 카드: 이름 / 분류 / 푸드마일리지(1~10) / 건강등급(1~5) / 이모지
+const CARDS = [
+  {n:'전북 쌀',c:'곡류',m:1,g:1,e:'🍚'},{n:'전북 보리',c:'곡류',m:1,g:1,e:'🌾'},
+  {n:'국산 현미',c:'곡류',m:1,g:1,e:'🍘'},{n:'태국 자스민쌀',c:'곡류',m:5,g:2,e:'🍛'},
+  {n:'미국 밀가루',c:'곡류',m:9,g:3,e:'🍞'},{n:'베트남 쌀국수면',c:'곡류',m:5,g:3,e:'🍜'},
+  {n:'전북 상추',c:'채소류',m:1,g:1,e:'🥬'},{n:'전북 시금치',c:'채소류',m:1,g:1,e:'🌿'},
+  {n:'국산 감자',c:'채소류',m:1,g:1,e:'🥔'},{n:'국산 애호박',c:'채소류',m:1,g:1,e:'🥒'},
+  {n:'국산 당근',c:'채소류',m:2,g:1,e:'🥕'},{n:'제주 브로콜리',c:'채소류',m:2,g:1,e:'🥦'},
+  {n:'중국 마늘',c:'채소류',m:3,g:1,e:'🧄'},{n:'중국 당근',c:'채소류',m:3,g:1,e:'🥕'},
+  {n:'전북 배추김치',c:'김치',m:1,g:1,e:'🥬'},{n:'국산 깍두기',c:'김치',m:1,g:1,e:'🟥'},
+  {n:'국산 열무김치',c:'김치',m:1,g:1,e:'🌱'},{n:'중국산 김치',c:'김치',m:3,g:2,e:'🥡'},
+  {n:'국산 달걀',c:'고기생선류',m:1,g:1,e:'🥚'},{n:'국산 두부',c:'고기생선류',m:1,g:1,e:'🧊'},
+  {n:'전북 한우',c:'고기생선류',m:1,g:2,e:'🐮'},{n:'국산 돼지고기',c:'고기생선류',m:1,g:2,e:'🐷'},
+  {n:'국산 고등어',c:'고기생선류',m:2,g:1,e:'🐟'},{n:'노르웨이 연어',c:'고기생선류',m:8,g:1,e:'🍣'},
+  {n:'호주산 소고기',c:'고기생선류',m:8,g:2,e:'🥩'},{n:'미국산 소고기',c:'고기생선류',m:9,g:2,e:'🍖'},
+  {n:'브라질 닭고기',c:'고기생선류',m:10,g:2,e:'🍗'},
+  {n:'전북 딸기',c:'후식',m:1,g:1,e:'🍓'},{n:'국산 사과',c:'후식',m:1,g:1,e:'🍎'},
+  {n:'국산 흰우유',c:'후식',m:1,g:1,e:'🥛'},{n:'국산 가당 요거트',c:'후식',m:1,g:3,e:'🍶'},
+  {n:'필리핀 바나나',c:'후식',m:5,g:1,e:'🍌'},{n:'뉴질랜드 키위',c:'후식',m:9,g:1,e:'🥝'},
+  {n:'미국 아몬드',c:'후식',m:9,g:2,e:'🥜'},{n:'칠레 포도',c:'후식',m:10,g:1,e:'🍇'},
+];
+
+// 퀴즈
+const QUIZ_HEALTH = [
+  {q:'신선한 과일과 흰우유는 건강등급 몇 등급일까요?',o:['1등급','3등급','5등급'],a:0},
+  {q:'설탕·물엿·아이스크림·초콜릿은 어떻게 먹는 게 좋을까요?',o:['매일 많이!','가끔, 적은 양만','아침마다 꼭'],a:1},
+  {q:'참기름·올리브유 같은 좋은 기름(2등급)은?',o:['적당량만 먹어요','무제한으로 먹어요','절대 먹으면 안 돼요'],a:0},
+  {q:'버터와 마요네즈(4등급)는 자주 먹어도 괜찮다?',o:['O','X'],a:1},
+  {q:'치즈와 가당 요거트(3등급)는 양 조절이 필요하다?',o:['O','X'],a:0},
+  {q:'1등급 식품의 특징은 무엇일까요?',o:['가공이 적고 신선해요','설탕이 많아요','기름에 튀겼어요'],a:0},
+  {q:'플레인 요거트와 가당 요거트 중 더 건강한 것은?',o:['플레인 요거트','가당 요거트'],a:0},
+  {q:'건강한 식판을 만들려면 꼭 있어야 하는 것은?',o:['채소 반찬','사탕','탄산음료'],a:0},
+  {q:'아보카도는 몸에 좋지만 열량이 있어 적당량 먹어야 한다?',o:['O','X'],a:0},
+  {q:'액상 요구르트와 생크림은 몇 등급일까요?',o:['1등급','4등급'],a:1},
+  {q:'골고루 먹으면 우리 몸에 어떤 점이 좋을까요?',o:['영양소를 고르게 얻어요','키가 줄어요','졸음이 와요'],a:0},
+  {q:'꿀은 자연에서 왔으니 매일 많이 먹어도 된다?',o:['O','X (4등급, 주의!)'],a:1},
+];
+const QUIZ_ECO = [
+  {q:'푸드마일리지란 무엇일까요?',o:['음식이 우리에게 오기까지 이동한 거리','음식의 무게','음식의 가격'],a:0},
+  {q:'푸드마일리지가 낮으면 어떨까요?',o:['환경 부담이 적어요','환경 부담이 커요'],a:0},
+  {q:'전북 쌀과 미국 밀가루 중 푸드마일리지가 낮은 것은?',o:['전북 쌀','미국 밀가루'],a:0},
+  {q:'멀리서 온 음식이 트럭·배·비행기로 이동할 때 많이 나오는 것은?',o:['탄소','무지개','산소'],a:0},
+  {q:'지구 반대편에서 온 음식의 푸드마일리지 점수는?',o:['1점','5점','10점'],a:2},
+  {q:'가까운 곳에서 온 음식을 먹으면 좋은 점은?',o:['환경을 지킬 수 있어요','더 비싸져요'],a:0},
+  {q:'제주·강원 등 국내 먼 지역 음식은 몇 점일까요?',o:['2점','8점'],a:0},
+  {q:'푸드마일리지를 줄이는 좋은 방법은?',o:['우리 지역 음식 먹기','먼 나라 음식만 먹기'],a:0},
+  {q:'배나 비행기로 오는 음식은 기름을 많이 쓴다?',o:['O','X'],a:0},
+  {q:'전북에서 난 음식의 푸드마일리지 점수는?',o:['1점','10점'],a:0},
+  {q:'가까운 곳에서 온 음식을 골고루 먹으면?',o:['건강과 환경을 함께 지켜요','아무 일도 없어요'],a:0},
+  {q:'푸드마일리지가 높은 음식은 이동거리가?',o:['길어요','짧아요'],a:0},
+];
+const MISSIONS = {
+  rps:{e:'✌️', t:'선생님을 이겨라!', d:'선생님과 가위바위보 대결! 팀 대표가 이기면 미션 성공!'},
+  squat:{e:'💪', t:'스쿼트 10개 실시!', d:'팀 전원이 함께 스쿼트 10개! 바른 자세로 끝까지 하면 성공!'},
+  lunge:{e:'🦵', t:'런지 10개 실시!', d:'팀 전원이 함께 런지 10개! 무릎이 바닥에 닿지 않게 하면 성공!'},
+  veggie:{e:'🫑', t:'색깔 채소 말하기!', d:'10초 안에 서로 다른 색깔의 채소 5가지를 말하면 성공! (예: 빨강-토마토)'},
+};
+
+/* ══════════════════ 보드 좌표 ══════════════════ */
+const W=620,H=940, WALL_L=20, WALL_R=600;
+const WARN_T=30, WARN_B=130, HOUSE_B=700, SAFE_B=800;
+const CX=310, CY=415, R_CENTER=65, R_INNER=135, R_BLUE=235;
+const HACK={x:310,y:875}, STONE_R=17;
+
+/* ══════════════════ 상태 ══════════════════ */
+let teams=[], stones=[], curIdx=0, endNo=1, phase='setup';
+let doneOrder=[]; let quizPoolH=[], quizPoolE=[];
+let aim=null; // {sx,sy,cx,cy}
+let curStone=null; // 이번에 던지는 스톤
+let audioCtx=null;
+
+const $=s=>document.querySelector(s);
+const canvas=$('#board'), ctx=canvas.getContext('2d');
+
+function beep(f,d,type='sine',v=.12){
+  try{
+    if(!audioCtx) return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type; o.frequency.value=f; g.gain.value=v;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+d);
+    o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function toast(msg,ms=2200){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),ms);
+}
+function confetti(){
+  const colors=['#F7A325','#7DD1F7','#F27E9B','#57A85A','#E45B5B','#9A67C6'];
+  for(let i=0;i<70;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(2.2+Math.random()*1.8)+'s';
+    c.style.animationDelay=(Math.random()*.5)+'s';
+    c.style.borderRadius=Math.random()>.5?'50%':'3px';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4500);
+  }
+}
+
+/* ══════════════════ 설정 화면 ══════════════════ */
+function showSetup(names){
+  phase='setup';
+  const nm=names||['1팀','2팀','3팀','4팀'];
+  openModal(`
+    <span class="eyebrow">GAME START</span>
+    <h2>🚚 건강급식 컬링에 온 걸 환영해요!</h2>
+    <p>4개 팀이 트럭 스톤을 <b>팀당 6개</b>씩 발사해서 식재료 카드를 모으고,
+       <b>가장 낮은 푸드마일리지</b>로 급식 식판을 완성하는 팀이 승리해요!</p>
+    <div class="setup-grid">
+      ${[0,1,2,3].map(i=>`
+        <div class="setup-team">
+          <span style="width:18px;height:18px;border-radius:50%;background:${TEAM_COLORS[i]};flex:none"></span>
+          <input id="tn${i}" maxlength="8" value="${nm[i]}" aria-label="${i+1}팀 이름">
+        </div>`).join('')}
+    </div>
+    <div class="actions">
+      <button class="btn ghost" onclick="showRules(true)">❓ 게임 방법 보기</button>
+      <button class="btn pink big" onclick="startGame()">🥌 게임 시작!</button>
+    </div>`);
+}
+window.startGame=function(){
+  const names=[0,1,2,3].map(i=>($('#tn'+i)?.value.trim()||`${i+1}팀`));
+  teams=names.map((n,i)=>({
+    name:n, color:TEAM_COLORS[i], idx:i, stonesLeft:STONES_PER_END,
+    tray:Object.fromEntries(SLOTS.map(s=>[s.id,null])), done:false, doneRank:0,
+  }));
+  stones=[]; doneOrder=[]; curIdx=0; endNo=1;
+  quizPoolH=shuffle([...QUIZ_HEALTH]); quizPoolE=shuffle([...QUIZ_ECO]);
+  closeModal(); renderTeams(); spawnStone(); phase='aim'; updateTurnUI();
+  toast(`${teams[0].name}부터 시작! 트럭을 당겨서 발사하세요 🚚`);
+};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ══════════════════ 팀 UI ══════════════════ */
+function trayMileage(t){return SLOTS.reduce((s,sl)=>s+(t.tray[sl.id]?t.tray[sl.id].m:0),0);}
+function trayGrades(t){return SLOTS.reduce((s,sl)=>s+(t.tray[sl.id]?t.tray[sl.id].g:0),0);}
+function renderTeams(){
+  $('#teams').innerHTML=teams.map((t,i)=>`
+    <div class="team-card ${i===curIdx&&phase!=='finished'?'active':''} ${t.done?'done':''}" style="--tc:${t.color}">
+      <div class="team-head">
+        <span class="team-dot"></span><span class="team-name">${t.name}</span>
+        <span class="team-mile">🚚 <b>${trayMileage(t)}</b>점</span>
+      </div>
+      <div class="stones">${Array.from({length:STONES_PER_END},(_,k)=>
+        `<span class="${k < STONES_PER_END-t.stonesLeft ? 'used':''}">🚚</span>`).join('')}</div>
+      <div class="tray">
+        ${SLOTS.map(sl=>{
+          const c=t.tray[sl.id];
+          return c
+            ? `<div class="slot filled" title="${c.n} (마일리지 ${c.m}점)"><span class="em">${c.e}</span><span>${c.n}</span><span class="mile-tag">🚚${c.m}</span></div>`
+            : `<div class="slot"><span class="em">${CAT_EMOJI[sl.cat]}</span><span>${sl.label}</span></div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+function updateTurnUI(){
+  const t=teams[curIdx];
+  $('#turnWho').textContent=t?t.name+' 차례':'-';
+  $('#turnWho').style.color=t?t.color:'inherit';
+  $('#endInfo').textContent=`${endNo}엔드 · 팀당 트럭 ${STONES_PER_END}대`;
+  renderTeams();
+}
+
+/* ══════════════════ 스톤(트럭) ══════════════════ */
+function spawnStone(){
+  const t=teams[curIdx];
+  curStone={x:HACK.x,y:HACK.y,vx:0,vy:0,ang:-Math.PI/2,team:curIdx,out:false,thrown:false};
+  stones.push(curStone);
+}
+function drawTruck(s){
+  ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang);
+  const c=teams[s.team].color;
+  // 바퀴
+  ctx.fillStyle='#33404F';
+  ctx.beginPath(); ctx.arc(-8,10,4.5,0,7); ctx.arc(8,10,4.5,0,7); ctx.fill();
+  // 짐칸
+  ctx.fillStyle=c; ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+  roundRect(-15,-10,20,19,3); ctx.fill(); ctx.stroke();
+  // 운전석
+  ctx.fillStyle='#FDFDFD';
+  roundRect(5,-6,11,15,3); ctx.fill(); ctx.strokeStyle=c; ctx.stroke();
+  ctx.fillStyle='#AEE2F8'; roundRect(8,-4,6,6,2); ctx.fill();
+  // 팀 번호
+  ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(s.team+1), -5, 0);
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* ══════════════════ 보드 그리기 ══════════════════ */
+function drawBoard(){
+  ctx.clearRect(0,0,W,H);
+  // 바탕
+  ctx.fillStyle='#F3FAFF'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(WALL_L,WARN_T,WALL_R-WALL_L,SAFE_B-WARN_T);
+  // 경고 구역
+  ctx.fillStyle='#FFC53D'; ctx.fillRect(WALL_L,WARN_T,WALL_R-WALL_L,WARN_B-WARN_T);
+  txt('⚠️ 푸드마일리지 경고 구역 (+10점)', CX, (WARN_T+WARN_B)/2, 22, '#7A5200');
+  // 안심 구역
+  ctx.fillStyle='#6BA84F'; ctx.fillRect(WALL_L,HOUSE_B,WALL_R-WALL_L,SAFE_B-HOUSE_B);
+  txt('🌱 푸드마일리지 안심 구역 (−10점)', CX, (HOUSE_B+SAFE_B)/2, 22, '#FFFFFF');
+  // 하우스: 십자선
+  ctx.strokeStyle='#D9E5EF'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(CX,WARN_B); ctx.lineTo(CX,HOUSE_B);
+  ctx.moveTo(WALL_L,CY); ctx.lineTo(WALL_R,CY); ctx.stroke();
+  // 파란 링
+  ctx.fillStyle='#7DD1F7'; ctx.beginPath(); ctx.arc(CX,CY,R_BLUE,0,7); ctx.fill();
+  ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(CX,CY,R_INNER,0,7); ctx.fill();
+  ctx.fillStyle='#F7A325'; ctx.beginPath(); ctx.arc(CX,CY,R_CENTER,0,7); ctx.fill();
+  // 라벨
+  txt('건강 식생활 퀴즈', CX, CY-183, 21, '#FFFFFF');
+  txt('저탄소·환경 퀴즈', CX, CY+183, 21, '#1E6B33');
+  txt('식재료 카드', CX, CY-14, 15, '#FFFFFF');
+  txt('교환 찬스', CX, CY+6, 15, '#FFFFFF');
+  txt('(원하는 카드!)', CX, CY+26, 11, '#FFF4DB');
+  // 모서리 미션
+  txt('✌️ 선생님을 이겨라!', 118, 165, 15, '#2B3A55');
+  txt('💪 스쿼트 10개!', 505, 165, 15, '#2B3A55');
+  txt('🦵 런지 10개!', 105, 668, 15, '#2B3A55');
+  txt('🫑 색깔 채소 말하기!', 508, 668, 15, '#2B3A55');
+  // 스타트 구역
+  ctx.fillStyle='#E8F4FC'; ctx.fillRect(WALL_L,SAFE_B,WALL_R-WALL_L,H-20-SAFE_B);
+  ctx.setLineDash([8,6]); ctx.strokeStyle='#9BC5DF';
+  ctx.strokeRect(WALL_L,SAFE_B,WALL_R-WALL_L,H-20-SAFE_B); ctx.setLineDash([]);
+  txt('S T A R T', CX, SAFE_B+30, 26, '#4A90D9');
+  // 테두리
+  ctx.strokeStyle='#2B3A55'; ctx.lineWidth=3;
+  ctx.strokeRect(WALL_L,WARN_T,WALL_R-WALL_L,H-20-WARN_T);
+
+  // 조준선
+  if(aim && curStone){
+    const dx=curStone.x-aim.cx, dy=curStone.y-aim.cy;
+    const pw=Math.min(Math.hypot(dx,dy),220);
+    const a=Math.atan2(dy,dx);
+    ctx.save();
+    ctx.strokeStyle=teams[curStone.team].color; ctx.lineWidth=4; ctx.setLineDash([10,8]);
+    ctx.beginPath(); ctx.moveTo(curStone.x,curStone.y);
+    ctx.lineTo(curStone.x+Math.cos(a)*pw*1.6, curStone.y+Math.sin(a)*pw*1.6); ctx.stroke();
+    ctx.setLineDash([]);
+    // 파워 게이지
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#2B3A55'; ctx.lineWidth=2;
+    roundRect(WALL_R-150,H-52,130,18,9); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=pw>170?'#E45B5B':pw>90?'#F7A325':'#57A85A';
+    roundRect(WALL_R-148,H-50,126*(pw/220),14,7); ctx.fill();
+    txt('파워', WALL_R-172, H-43, 14, '#2B3A55');
+    ctx.restore();
+  }
+  // 스톤들
+  stones.forEach(s=>{ if(!s.out) drawTruck(s); });
+  // 대기 스톤 강조
+  if(phase==='aim' && curStone){
+    ctx.strokeStyle=teams[curStone.team].color; ctx.lineWidth=3;
+    ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.arc(curStone.x,curStone.y,STONE_R+7+Math.sin(Date.now()/250)*2,0,7);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+function txt(t,x,y,size,color){
+  ctx.fillStyle=color; ctx.font=`${size}px 'Jua', sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(t,x,y);
+}
+
+/* ══════════════════ 물리 ══════════════════ */
+function physicsStep(){
+  const SUB=3;
+  for(let k=0;k<SUB;k++){
+    stones.forEach(s=>{
+      if(s.out) return;
+      s.x+=s.vx/SUB; s.y+=s.vy/SUB;
+      const sp=Math.hypot(s.vx,s.vy);
+      if(sp>0.02){ s.ang=Math.atan2(s.vy,s.vx); s.vx*=0.996; s.vy*=0.996; }
+      else { s.vx=0; s.vy=0; }
+      // 아웃 판정 (좌/우/위)
+      if(s.x<WALL_L-STONE_R||s.x>WALL_R+STONE_R||s.y<WARN_T-STONE_R){
+        s.out=true; s.vx=0; s.vy=0;
+        toast(`${teams[s.team].name} 트럭이 밖으로 나갔어요! 🚧`);
+      }
+      // 아래쪽 벽은 살짝 튕김
+      if(s.y>H-20-STONE_R){ s.y=H-20-STONE_R; s.vy*=-0.4; }
+    });
+    // 충돌
+    for(let i=0;i<stones.length;i++)for(let j=i+1;j<stones.length;j++){
+      const a=stones[i],b=stones[j];
+      if(a.out||b.out) continue;
+      const dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy);
+      if(d>0 && d<STONE_R*2){
+        const nx=dx/d, ny=dy/d, overlap=STONE_R*2-d;
+        a.x-=nx*overlap/2; a.y-=ny*overlap/2;
+        b.x+=nx*overlap/2; b.y+=ny*overlap/2;
+        const va=a.vx*nx+a.vy*ny, vb=b.vx*nx+b.vy*ny;
+        const dv=va-vb;
+        if(dv>0){
+          a.vx-=dv*nx; a.vy-=dv*ny;
+          b.vx+=dv*nx; b.vy+=dv*ny;
+          if(dv>1.5) beep(180+Math.random()*60,.06,'square',.1);
+        }
+      }
+    }
+  }
+}
+function allStopped(){return stones.every(s=>s.out||(s.vx===0&&s.vy===0));}
+
+function loop(){
+  if(phase==='moving'){
+    physicsStep();
+    if(allStopped()){ phase='event'; setTimeout(resolveThrow,350); }
+  }
+  drawBoard();
+  requestAnimationFrame(loop);
+}
+
+/* ══════════════════ 입력 ══════════════════ */
+function pt(ev){
+  const r=canvas.getBoundingClientRect();
+  return {x:(ev.clientX-r.left)*W/r.width, y:(ev.clientY-r.top)*H/r.height};
+}
+canvas.addEventListener('pointerdown',ev=>{
+  if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(phase!=='aim'||!curStone) return;
+  const p=pt(ev);
+  if(Math.hypot(p.x-curStone.x,p.y-curStone.y)<70){
+    aim={cx:p.x,cy:p.y}; canvas.setPointerCapture(ev.pointerId);
+  }
+});
+canvas.addEventListener('pointermove',ev=>{
+  if(aim){const p=pt(ev); aim.cx=p.x; aim.cy=p.y;}
+});
+canvas.addEventListener('pointerup',ev=>{
+  if(!aim||!curStone) return;
+  const dx=curStone.x-aim.cx, dy=curStone.y-aim.cy;
+  const pw=Math.min(Math.hypot(dx,dy),220);
+  aim=null;
+  if(pw<15){toast('조금 더 세게 당겨보세요!'); return;}
+  const a=Math.atan2(dy,dx), sp=pw*0.105;
+  curStone.vx=Math.cos(a)*sp; curStone.vy=Math.sin(a)*sp; curStone.thrown=true;
+  teams[curIdx].stonesLeft--; renderTeams();
+  phase='moving'; $('#turnMsg').textContent='트럭 출발! 🚚💨';
+  beep(320,.12,'triangle',.14);
+});
+
+/* ══════════════════ 구역 판정 & 이벤트 ══════════════════ */
+function zoneOf(s){
+  if(s.out) return 'out';
+  if(s.y<=WARN_B) return 'warn';
+  if(s.y>HOUSE_B && s.y<=SAFE_B) return 'safe';
+  if(s.y>SAFE_B) return 'start';
+  const d=Math.hypot(s.x-CX,s.y-CY);
+  if(d<=R_INNER) return 'center';
+  if(d<=R_BLUE) return s.y<CY?'quizH':'quizE';
+  if(s.x<CX && s.y<CY) return 'rps';
+  if(s.x>=CX && s.y<CY) return 'squat';
+  if(s.x<CX) return 'lunge';
+  return 'veggie';
+}
+function resolveThrow(){
+  const t=teams[curIdx], z=zoneOf(curStone);
+  switch(z){
+    case 'out': toast('아웃! 카드를 얻지 못했어요 😢'); endTurn(); break;
+    case 'start': toast('너무 약했어요! 스타트 구역에 머물러서 카드가 없어요.'); endTurn(); break;
+    case 'warn':
+      openModal(`<span class="eyebrow warn">경고 구역</span>
+        <h2>⚠️ 푸드마일리지 경고 구역!</h2>
+        <p>카드는 없어요. 게임이 끝날 때 트럭이 이곳에 남아 있으면 <b>+10점</b>이 더해져요!<br>
+        다음 트럭으로 밀어내는 것도 작전이에요. 🚚</p>
+        <div class="actions"><button class="btn" onclick="closeModal();endTurn()">확인</button></div>`);
+      break;
+    case 'safe':
+      openModal(`<span class="eyebrow eco">안심 구역</span>
+        <h2>🌱 푸드마일리지 안심 구역!</h2>
+        <p>카드는 없지만, 게임이 끝날 때 트럭이 이곳에 남아 있으면 <b>−10점</b>! 점수가 줄어드는 행운의 자리예요.</p>
+        <div class="actions"><button class="btn green" onclick="closeModal();endTurn()">확인</button></div>`);
+      break;
+    case 'center':
+      openCardPicker(`🎯 중앙 명중! <b>${t.name}</b>, 원하는 식재료 카드를 골라요!`);
+      break;
+    case 'quizH': openQuiz('H'); break;
+    case 'quizE': openQuiz('E'); break;
+    default: openMission(z);
+  }
+}
+function openQuiz(kind){
+  const pool=kind==='H'?quizPoolH:quizPoolE;
+  if(pool.length===0){(kind==='H'?quizPoolH:quizPoolE).push(...shuffle([...(kind==='H'?QUIZ_HEALTH:QUIZ_ECO)]));}
+  const q=(kind==='H'?quizPoolH:quizPoolE).pop();
+  const t=teams[curIdx];
+  openModal(`
+    <span class="eyebrow ${kind==='E'?'eco':''}">${kind==='H'?'🍎 건강 식생활 퀴즈':'🌍 저탄소·환경 퀴즈'}</span>
+    <h2>${q.q}</h2>
+    <p style="font-size:14px;color:var(--ink-soft)">${t.name}이(가) 정답을 맞히면 <b>원하는 카드</b>, 틀리면 <b>랜덤 카드</b>!</p>
+    <div class="opts">${q.o.map((o,i)=>`<button class="opt-btn" onclick="answerQuiz(this,${i},${q.a})">${o}</button>`).join('')}</div>`);
+}
+window.answerQuiz=function(btn,i,a){
+  document.querySelectorAll('.opt-btn').forEach(b=>b.style.pointerEvents='none');
+  if(i===a){
+    btn.classList.add('correct'); beep(660,.15,'triangle',.15); setTimeout(()=>beep(880,.2,'triangle',.15),130);
+    setTimeout(()=>openCardPicker(`⭕ 정답! <b>${teams[curIdx].name}</b>, 원하는 식재료 카드를 골라요!`),700);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn')[a].classList.add('correct');
+    beep(200,.25,'sawtooth',.1);
+    setTimeout(()=>randomCard('❌ 아쉬워요! 랜덤 카드를 뽑아요.'),1000);
+  }
+};
+function openMission(key){
+  const m=MISSIONS[key], t=teams[curIdx];
+  openModal(`
+    <span class="eyebrow mission">몸으로 하는 미션</span>
+    <div class="big-emoji">${m.e}</div>
+    <h2 style="text-align:center">${m.t}</h2>
+    <p style="text-align:center">${m.d}</p>
+    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${t.name}이(가) 성공하면 <b>원하는 카드</b>, 실패하면 <b>랜덤 카드</b>!<br>선생님이 판정해 주세요 👩‍🏫</p>
+    <div class="actions">
+      <button class="btn green big" onclick="openCardPicker('🎉 미션 성공! <b>${t.name}</b>, 원하는 카드를 골라요!')">✅ 미션 성공</button>
+      <button class="btn big" style="background:#8CA0B8" onclick="randomCard('미션 실패! 랜덤 카드를 뽑아요.')">❌ 미션 실패</button>
+    </div>`);
+}
+
+/* ══════════════════ 카드 획득/배치 ══════════════════ */
+function emptySlotsFor(t,cat){return SLOTS.filter(s=>s.cat===cat && !t.tray[s.id]);}
+function mileClass(m){return m<=2?'low':m<=6?'mid':'high';}
+window.openCardPicker=function(title){
+  const t=teams[curIdx];
+  const cats=['곡류','채소류','김치','고기생선류','후식'];
+  openModal(`
+    <span class="eyebrow">식재료 카드 고르기</span>
+    <h2 style="font-size:21px">${title}</h2>
+    <p style="font-size:13px;color:var(--ink-soft)">🚚 숫자가 <b>낮을수록</b> 가까운 곳에서 온 식재료예요. 어떤 카드가 유리할까요?</p>
+    <div class="card-grid">
+      ${cats.map(cat=>{
+        const usable=emptySlotsFor(t,cat).length>0;
+        return `<div class="cat-title">${CAT_EMOJI[cat]} ${cat}${usable?'':' <small style="color:#B0B9C6">(칸이 다 찼어요)</small>'}</div>`+
+          CARDS.filter(c=>c.c===cat).map(c=>`
+            <button class="food-card ${usable?'':'disabled'}" onclick='gotCard(${JSON.stringify(c)})'>
+              <span class="em">${c.e}</span><span class="nm">${c.n}</span>
+              <span class="mi ${mileClass(c.m)}">🚚 ${c.m}점</span>
+            </button>`).join('');
+      }).join('')}
+    </div>`);
+};
+window.randomCard=function(msg){
+  const c=CARDS[Math.floor(Math.random()*CARDS.length)];
+  openModal(`
+    <span class="eyebrow mission">랜덤 카드</span>
+    <h2 style="text-align:center;font-size:22px">${msg}</h2>
+    <div class="reveal-card">
+      <div class="em">${c.e}</div><div class="nm">${c.n}</div>
+      <div class="mi">분류: ${c.c} · 푸드마일리지 <b>${c.m}점</b></div>
+    </div>
+    <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>카드 받기</button></div>`);
+};
+window.gotCard=function(c){
+  const t=teams[curIdx];
+  const empties=emptySlotsFor(t,c.c);
+  if(empties.length===0){
+    toast(`${CAT_EMOJI[c.c]} ${c.c} 칸이 이미 가득! 카드를 놓을 곳이 없어요 😥`);
+    closeModal(); endTurn(); return;
+  }
+  if(empties.length===1){ placeCard(c,empties[0].id); return; }
+  openModal(`
+    <span class="eyebrow">칸 고르기</span>
+    <h2>「${c.e} ${c.n}」 카드를 어느 칸에 놓을까요?</h2>
+    <div class="actions">
+      ${empties.map(s=>`<button class="btn orange big" onclick='placeCard(${JSON.stringify(c)},"${s.id}")'>${s.label}</button>`).join('')}
+    </div>`);
+};
+window.placeCard=function(c,slotId){
+  const t=teams[curIdx];
+  t.tray[slotId]=c; closeModal(); renderTeams();
+  beep(520,.1,'triangle',.12);
+  toast(`${t.name}: ${c.e} ${c.n} 획득! (푸드마일리지 +${c.m}점)`);
+  // 완성 확인
+  if(!t.done && SLOTS.every(s=>t.tray[s.id])){
+    t.done=true; doneOrder.push(t.idx); t.doneRank=doneOrder.length;
+    confetti(); beep(700,.15,'triangle',.15); setTimeout(()=>beep(940,.25,'triangle',.15),160);
+    setTimeout(()=>{
+      openModal(`
+        <span class="eyebrow eco">식판 완성</span>
+        <div class="big-emoji">🍽️🎉</div>
+        <h2 style="text-align:center">${t.name} 식판 완성! ${t.doneRank}등!</h2>
+        <p style="text-align:center">순위 보너스: <b>+${t.doneRank-1}점</b> (1등은 0점!)<br>
+        ${teams.every(x=>x.done)?'모든 팀이 완성했어요! 점수를 계산합니다.':'다른 팀들은 계속 도전해요!'}</p>
+        <div class="actions"><button class="btn pink big" onclick="closeModal();afterDone()">확인</button></div>`);
+    },600);
+    return;
+  }
+  endTurn();
+};
+window.afterDone=function(){
+  if(teams.every(t=>t.done)){ finishGame(); } else { endTurn(); }
+};
+
+/* ══════════════════ 턴 진행 ══════════════════ */
+function endTurn(){
+  if(phase==='finished') return;
+  if(teams.every(t=>t.done)){ finishGame(); return; }
+  // 다음 팀: 완성 안 했고 스톤이 남은 팀
+  let found=-1;
+  for(let k=1;k<=4;k++){
+    const i=(curIdx+k)%4;
+    if(!teams[i].done && teams[i].stonesLeft>0){ found=i; break; }
+  }
+  if(found===-1){
+    // 엔드 종료
+    openModal(`
+      <span class="eyebrow">엔드 종료</span>
+      <h2>🥌 ${endNo}엔드가 끝났어요!</h2>
+      <p>아직 식판을 완성하지 못한 팀이 있어요. 다음 엔드를 시작하면 보드의 트럭이 모두 치워지고
+      각 팀은 새 트럭 ${STONES_PER_END}대를 받아요.</p>
+      <p style="font-size:13px;color:var(--ink-soft)">※ 경고/안심 구역 점수는 <b>게임을 종료하는 순간</b>의 보드로만 계산돼요.</p>
+      <div class="actions">
+        <button class="btn orange big" onclick="nextEnd()">▶️ 다음 엔드 시작</button>
+        <button class="btn big" onclick="closeModal();finishGame()">🏁 여기서 게임 종료</button>
+      </div>`);
+    return;
+  }
+  curIdx=found; phase='aim'; spawnStone(); updateTurnUI();
+  $('#turnMsg').textContent='트럭을 발사하세요!';
+}
+window.nextEnd=function(){
+  endNo++; stones=[];
+  teams.forEach(t=>{ if(!t.done) t.stonesLeft=STONES_PER_END; });
+  // 다음 미완성 팀부터
+  curIdx=teams.findIndex(t=>!t.done);
+  closeModal(); spawnStone(); phase='aim'; updateTurnUI();
+  toast(`${endNo}엔드 시작! 🚚`);
+};
+
+/* ══════════════════ 게임 종료 & 점수 ══════════════════ */
+function finishGame(){
+  phase='finished'; aim=null;
+  const rows=teams.map(t=>{
+    const mile=trayMileage(t);
+    const rankBonus=t.done? (t.doneRank-1) : 5;
+    let warnN=0,safeN=0;
+    stones.forEach(s=>{
+      if(s.out||s.team!==t.idx) return;
+      const z=zoneOf(s);
+      if(z==='warn') warnN++; if(z==='safe') safeN++;
+    });
+    const zone=warnN*10-safeN*10;
+    return {t, mile, rankBonus, warnN, safeN, zone, grade:trayGrades(t),
+            total:mile+rankBonus+zone};
+  });
+  rows.sort((a,b)=>a.total-b.total || a.grade-b.grade);
+  const win=rows[0];
+  confetti();
+  openModal(`
+    <span class="eyebrow eco">최종 결과</span>
+    <div class="winner-line">🏆 우승: <span style="color:${win.t.color}">${win.t.name}</span> (총 ${win.total}점)</div>
+    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">푸드마일리지가 <b>가장 낮은</b> 팀이 승리! 가까운 곳 음식이 지구를 지켜요 🌍</p>
+    <table class="result">
+      <tr><th>순위</th><th>팀</th><th>카드<br>마일리지</th><th>완성 순위<br>보너스</th><th>⚠️경고<br>(+10)</th><th>🌱안심<br>(−10)</th><th>총점</th></tr>
+      ${rows.map((r,i)=>`
+        <tr class="${i===0?'win':''}">
+          <td>${['🥇','🥈','🥉','4위'][i]}</td>
+          <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성 +5)</small>'}</td>
+          <td>${r.mile}</td><td>+${r.rankBonus}</td>
+          <td>${r.warnN?'+'+r.warnN*10:'0'}</td><td>${r.safeN?'−'+r.safeN*10:'0'}</td>
+          <td class="total">${r.total}</td>
+        </tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 동점일 때는 식재료 건강등급 합이 낮은(더 건강한) 팀이 이겨요.</p>
+    <div class="actions">
+      <button class="btn pink big" onclick="restartKeepNames()">🔄 한 판 더!</button>
+    </div>`);
+  updateTurnUI(); $('#turnWho').textContent='게임 종료'; $('#turnMsg').textContent='';
+}
+window.restartKeepNames=function(){ showSetup(teams.map(t=>t.name)); };
+
+/* ══════════════════ 모달/규칙 ══════════════════ */
+function openModal(html){ $('#modalBox').innerHTML=html; $('#overlay').classList.remove('hidden'); }
+window.closeModal=function(){ $('#overlay').classList.add('hidden'); };
+
+window.showRules=function(fromSetup){
+  openModal(`
+    <span class="eyebrow">게임 방법</span>
+    <h2>🚚 건강급식 컬링, 이렇게 놀아요!</h2>
+    <div class="rules">
+      <h3>1. 트럭 발사하기</h3>
+      <ul>
+        <li>4개 팀이 차례대로 <b>트럭 스톤(팀당 6대)</b>을 발사해요.</li>
+        <li>트럭을 누른 채 <b>아래로 당겼다 놓으면</b> 반대 방향으로 슝! 다른 팀 트럭을 밀어낼 수도 있어요.</li>
+      </ul>
+      <h3>2. 멈춘 자리에서 이벤트!</h3>
+      <ul>
+        <li>🎯 <b>가운데 원</b>: 원하는 식재료 카드를 바로 획득!</li>
+        <li>🔵 <b>파란 링(위)</b>: 건강 식생활 퀴즈 / <b>파란 링(아래)</b>: 저탄소·환경 퀴즈 — 맞히면 원하는 카드, 틀리면 랜덤 카드</li>
+        <li>💪 <b>네 모서리</b>: 몸으로 하는 미션(가위바위보·스쿼트·런지·색깔 채소 말하기) — 성공하면 원하는 카드, 실패하면 랜덤 카드</li>
+        <li>⚠️ <b>경고 구역</b>: 카드 없음, 게임 종료 시 그곳의 트럭 1대당 <b>+10점</b></li>
+        <li>🌱 <b>안심 구역</b>: 카드 없음, 게임 종료 시 트럭 1대당 <b>−10점</b></li>
+      </ul>
+      <h3>3. 식판 완성하기</h3>
+      <ul>
+        <li>식판 7칸: 밥(곡류) · 국/찌개(채소 1 + 고기생선 1) · 채소 반찬 · 김치 · 고기생선달걀콩 · 후식</li>
+        <li>모든 팀이 6대를 다 쓰면 다음 엔드! 트럭을 새로 받아 계속해요.</li>
+      </ul>
+      <h3>4. 점수 계산 (낮을수록 승리!)</h3>
+      <ul>
+        <li>식판에 모은 카드의 <b>푸드마일리지 점수 합</b></li>
+        <li>완성 순위 보너스: 1등 0점, 2등 +1, 3등 +2, 4등 +3 (미완성 팀 +5)</li>
+        <li>게임 종료 시 경고 구역 트럭 +10 / 안심 구역 트럭 −10</li>
+        <li>동점이면 식재료 <b>건강등급 합</b>이 낮은(더 건강한) 팀 승리!</li>
+      </ul>
+    </div>
+    <div class="actions">
+      <button class="btn orange big" onclick="${fromSetup?'showSetupBack()':'closeModal()'}">알겠어요!</button>
+    </div>`);
+};
+window.showSetupBack=function(){ showSetup(teams.length?teams.map(t=>t.name):null); };
+
+$('#btnRules').addEventListener('click',()=>showRules(phase==='setup'));
+$('#btnRestart').addEventListener('click',()=>{
+  if(phase==='setup'||confirm('게임을 처음부터 다시 시작할까요?')) showSetup(teams.length?teams.map(t=>t.name):null);
+});
+$('#btnFinish').addEventListener('click',()=>{
+  if(phase==='setup'){toast('먼저 게임을 시작해 주세요!');return;}
+  if(phase==='finished') return;
+  if(confirm('지금 게임을 종료하고 점수를 계산할까요?')) finishGame();
+});
+
+/* ══════════════════ 시작 ══════════════════ */
+renderTeams(); updateTurnUI(); loop();
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>drawBoard()); }
+showSetup();
+</script>
+</body>
+</html>
