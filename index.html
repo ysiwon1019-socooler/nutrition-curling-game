@@ -630,7 +630,7 @@ function physicsStep(){
       if(s.out) return;
       s.x+=s.vx/SUB; s.y+=s.vy/SUB;
       const sp=Math.hypot(s.vx,s.vy);
-      if(sp>0.02){ s.ang=Math.atan2(s.vy,s.vx); s.vx*=0.996; s.vy*=0.996; }
+      if(sp>0.6){ s.ang=Math.atan2(s.vy,s.vx); s.vx*=0.992; s.vy*=0.992; }
       else { s.vx=0; s.vy=0; }
       // 아웃 판정 (좌/우/위)
       if(s.x<WALL_L-STONE_R||s.x>WALL_R+STONE_R||s.y<WARN_T-STONE_R){
