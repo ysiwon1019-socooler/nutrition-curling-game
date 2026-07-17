@@ -774,7 +774,7 @@ window.answerQuiz=function(btn,i,a){
     btn.classList.add('wrong');
     document.querySelectorAll('.opt-btn')[a].classList.add('correct');
     beep(200,.25,'sawtooth',.1);
-    setTimeout(()=>randomCard('❌ 아쉬워요! 랜덤 카드를 뽑아요.'),1000);
+    setTimeout(()=>randomCard('❌ 아쉬워요! 푸드마일리지가 가장 높은 카드를 받아요.',0,true),1000);
   }
 };
 function openMission(key){
@@ -855,14 +855,21 @@ window.revealCard=function(c){
     </div>
     <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>✅ 이 카드로 받기</button></div>`);
 };
-window.randomCard=function(msg,minMile){
+window.randomCard=function(msg,minMile,worst){
   minMile=minMile||0;
   let pool=CARDS.filter(c=>!isTaken(c) && c.m>=minMile);
   if(!pool.length) pool=CARDS.filter(c=>!isTaken(c));
   if(!pool.length) pool=CARDS;
-  const c=pool[Math.floor(Math.random()*pool.length)];
+  let c;
+  if(worst){
+    const maxM=Math.max(...pool.map(x=>x.m));
+    const top=pool.filter(x=>x.m===maxM);
+    c=top[Math.floor(Math.random()*top.length)];
+  } else {
+    c=pool[Math.floor(Math.random()*pool.length)];
+  }
   openModal(`
-    <span class="eyebrow mission">랜덤 카드</span>
+    <span class="eyebrow mission">${worst?'최고 마일리지 카드':'랜덤 카드'}</span>
     <h2 style="text-align:center;font-size:22px">${msg}</h2>
     <div class="reveal-card">
       <div class="gr-tag g${c.g}">건강 등급 : ${c.g}등급</div>
@@ -1049,7 +1056,7 @@ window.showRules=function(fromSetup){
       <h3>2. 멈춘 자리에서 이벤트!</h3>
       <ul>
         <li>🎯 <b>가운데 주황 원</b>: 원하는 음식 카드를 바로 획득!</li>
-        <li>⚪ <b>안쪽 흰색 링</b>: 저탄소·환경 퀴즈 / 🔵 <b>파란 링</b>: 건강 식생활 퀴즈 — 맞히면 원하는 카드, 틀리면 랜덤 카드</li>
+        <li>⚪ <b>안쪽 흰색 링</b>: 저탄소·환경 퀴즈 / 🔵 <b>파란 링</b>: 건강 식생활 퀴즈 — 맞히면 원하는 카드, 틀리면 <b>푸드마일리지가 가장 높은 카드</b>를 받아요</li>
         <li>💪 <b>네 모서리</b>: 몸으로 하는 미션(가위바위보·스쿼트·런지·색깔 채소 말하기) — 성공하면 원하는 카드, 실패하면 랜덤 카드</li>
         <li>⚠️ <b>경고 구역</b>: 카드 없음, 마일리지 동점 시 그곳의 트럭 1대당 <b>+1점</b></li>
         <li>🌱 <b>안심 구역</b>: 카드 없음, 마일리지 동점 시 트럭 1대당 <b>−1점</b></li>
