@@ -797,10 +797,10 @@ function openMission(key){
     <h2 style="text-align:center">${m.t}</h2>
     <p style="text-align:center">${m.d}</p>
     ${extra}
-    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${t.name}이(가) 성공하면 <b>원하는 카드</b>, 실패하면 <b>랜덤 카드</b>!<br>선생님이 판정해 주세요 👩‍🏫</p>
+    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${t.name}이(가) 성공하면 <b>원하는 카드</b>, 실패하면 <b>푸드마일리지 5점 이상인 랜덤 카드</b>!<br>선생님이 판정해 주세요 👩‍🏫</p>
     <div class="actions">
       <button class="btn green big" onclick="openCardPicker('🎉 미션 성공! <b>${t.name}</b>, 원하는 음식 카드를 골라요!')">✅ 미션 성공</button>
-      <button class="btn big" style="background:#8CA0B8" onclick="randomCard('미션 실패! 랜덤 카드를 뽑아요.')">❌ 미션 실패</button>
+      <button class="btn big" style="background:#8CA0B8" onclick="randomCard('미션 실패! 푸드마일리지 5점 이상인 랜덤 카드를 뽑아요.',5)">❌ 미션 실패</button>
     </div>`);
 }
 window.startCount=function(btn){
@@ -855,9 +855,12 @@ window.revealCard=function(c){
     </div>
     <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>✅ 이 카드로 받기</button></div>`);
 };
-window.randomCard=function(msg){
-  const pool=CARDS.filter(c=>!isTaken(c));
-  const c=(pool.length?pool:CARDS)[Math.floor(Math.random()*(pool.length?pool.length:CARDS.length))];
+window.randomCard=function(msg,minMile){
+  minMile=minMile||0;
+  let pool=CARDS.filter(c=>!isTaken(c) && c.m>=minMile);
+  if(!pool.length) pool=CARDS.filter(c=>!isTaken(c));
+  if(!pool.length) pool=CARDS;
+  const c=pool[Math.floor(Math.random()*pool.length)];
   openModal(`
     <span class="eyebrow mission">랜덤 카드</span>
     <h2 style="text-align:center;font-size:22px">${msg}</h2>
