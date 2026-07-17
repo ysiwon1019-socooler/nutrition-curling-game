@@ -332,6 +332,7 @@ const CARDS = [
   {n:'마라탕',c:'국',o:'중국',km:'1,200km',m:3,g:4,e:'🌶️'},
   {n:'수프',c:'국',o:'프랑스',km:'9,300km',m:8,g:3,e:'🥣'},
   {n:'부대찌개',c:'국',o:'미국',km:'10,500km',m:9,g:5,e:'🥘'},
+  {n:'라면',c:'국',o:'미국·호주산 밀',km:'9,000km',m:7,g:5,e:'🍜'},
   // 나물반찬
   {n:'시금치나물',c:'나물반찬',o:'전남 신안',km:'250km',m:1,g:1,e:'🥬'},
   {n:'콩나물무침',c:'나물반찬',o:'전북 전주',km:'30km',m:1,g:1,e:'🌱'},
@@ -349,6 +350,10 @@ const CARDS = [
   {n:'고등어구이',c:'단백질반찬',o:'노르웨이',km:'8,700km',m:8,g:1,e:'🐟'},
   {n:'연어구이',c:'단백질반찬',o:'알래스카',km:'6,900km',m:7,g:1,e:'🍣'},
   {n:'오징어볶음',c:'단백질반찬',o:'칠레',km:'19,000km',m:10,g:3,e:'🦑'},
+  {n:'치킨',c:'단백질반찬',o:'국내산 닭고기',km:'200km',m:1,g:4,e:'🍗'},
+  {n:'새우튀김',c:'단백질반찬',o:'베트남산 새우',km:'3,000km',m:5,g:4,e:'🍤'},
+  {n:'돼지고기수육',c:'단백질반찬',o:'국내산 돼지고기',km:'200km',m:1,g:2,e:'🥩'},
+  {n:'메추리알장조림',c:'단백질반찬',o:'국내산 메추리알',km:'200km',m:1,g:2,e:'🥚'},
   // 김치
   {n:'배추김치',c:'김치',o:'전남 해남',km:'280km',m:1,g:2,e:'🥬'},
   {n:'깍두기',c:'김치',o:'제주',km:'450km',m:2,g:2,e:'🟥'},
@@ -365,6 +370,8 @@ const CARDS = [
   {n:'파인애플',c:'후식',o:'필리핀',km:'3,000km',m:5,g:1,e:'🍍'},
   {n:'체리',c:'후식',o:'칠레',km:'19,000km',m:10,g:1,e:'🍒'},
   {n:'아이스티',c:'후식',o:'중국',km:'1,200km',m:3,g:4,e:'🧃'},
+  {n:'피자',c:'후식',o:'미국산 밀·치즈',km:'10,000km',m:8,g:5,e:'🍕'},
+  {n:'요아정',c:'후식',o:'국내산 원유',km:'200km',m:1,g:4,e:'🍦'},
 ];
 CARDS.forEach((c,i)=>{ c.id=i; });
 
@@ -951,22 +958,25 @@ function finishGame(){
       if(z==='warn') warnN++; if(z==='safe') safeN++;
     });
     const zone=warnN*1-safeN*1;
-    const emptyPenalty=emptyN*3;
+    const emptyPenalty=emptyN*5;
     const base=mile+emptyPenalty;
-    return {t, mile, emptyN, emptyPenalty, warnN, safeN, zone, base, grade:trayGrades(t)};
+    const grade=trayGrades(t);
+    const gradePenalty=t.done?0:5;
+    const gradeFinal=grade+gradePenalty;
+    return {t, mile, emptyN, emptyPenalty, warnN, safeN, zone, base, grade, gradePenalty, gradeFinal};
   });
   // 마일리지+미완성 패널티(base)가 같은 팀끼리만 구역 점수를 더해 동점을 가려요.
   rows.forEach(r=>{ r.tied = rows.some(x=>x!==r && x.base===r.base); r.final = r.tied ? r.base+r.zone : r.base; });
   rows.sort((a,b)=>a.base-b.base || a.zone-b.zone || a.grade-b.grade);
   const win=rows[0];
-  const gradeRows=[...rows].sort((a,b)=>a.grade-b.grade);
+  const gradeRows=[...rows].sort((a,b)=>a.gradeFinal-b.gradeFinal);
   confetti();
   openModal(`
     <span class="eyebrow eco">최종 결과</span>
     <div class="winner-line">🏆 우승: <span style="color:${win.t.color}">${win.t.name}</span> (최종 ${win.final}점)</div>
     <p style="text-align:center;font-size:14px;color:var(--ink-soft)">푸드마일리지가 <b>가장 낮은</b> 팀이 승리! 가까운 곳 음식이 지구를 지켜요 🌍</p>
     <table class="result">
-      <tr><th>순위</th><th>팀</th><th>카드<br>마일리지</th><th>미완성<br>칸(+3)</th><th>⚠️경고<br>(+1)</th><th>🌱안심<br>(−1)</th><th>최종점수</th></tr>
+      <tr><th>순위</th><th>팀</th><th>카드<br>마일리지</th><th>미완성<br>칸(+5)</th><th>⚠️경고<br>(+1)</th><th>🌱안심<br>(−1)</th><th>최종점수</th></tr>
       ${rows.map((r,i)=>`
         <tr class="${i===0?'win':''}">
           <td>${['🥇','🥈','🥉','4위'][i]}</td>
@@ -977,18 +987,19 @@ function finishGame(){
           <td class="total">${r.final}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 완성 순서는 점수에 영향을 주지 않지만, 채우지 못한 칸은 하나당 <b>+3점</b>이 더해져요. 이 점수까지 같은 팀은 경고(+1)·안심(−1) 구역 트럭 개수를 더해 순위를 가리고, 그래도 같으면 음식 건강등급 합이 낮은(더 건강한) 팀이 이겨요.</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 완성 순서는 점수에 영향을 주지 않지만, 채우지 못한 칸은 하나당 <b>+5점</b>이 더해져요. 이 점수까지 같은 팀은 경고(+1)·안심(−1) 구역 트럭 개수를 더해 순위를 가리고, 그래도 같으면 음식 건강등급 합이 낮은(더 건강한) 팀이 이겨요.</p>
     <h3 style="margin:18px 0 6px; font-size:16px; color:var(--safe-deep)">🥗 건강등급 순위표</h3>
     <table class="result">
-      <tr><th>순위</th><th>팀</th><th>건강등급 합</th></tr>
+      <tr><th>순위</th><th>팀</th><th>미완성<br>패널티</th><th>건강등급 합</th></tr>
       ${gradeRows.map((r,i)=>`
         <tr class="${i===0?'win':''}">
           <td>${['🥇','🥈','🥉','4위'][i]}</td>
-          <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}</td>
-          <td class="total">${r.grade}</td>
+          <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성)</small>'}</td>
+          <td>${r.gradePenalty?'+'+r.gradePenalty:'0'}</td>
+          <td class="total">${r.gradeFinal}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. (승패와는 무관한 참고 기록이에요)</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. 식판을 완성하지 못한 팀은 <b>+5점</b> 패널티가 더해져요. (승패와는 무관한 참고 기록이에요)</p>
     <div class="actions">
       <button class="btn pink big" onclick="restartKeepNames()">🔄 한 판 더!</button>
     </div>`);
@@ -1028,10 +1039,10 @@ window.showRules=function(fromSetup){
       <h3>4. 점수 계산 (낮을수록 승리!)</h3>
       <ul>
         <li>식판에 모은 카드의 <b>푸드마일리지 점수 합</b>으로 순위를 매겨요. (식판을 먼저 완성한 순서는 점수에 영향을 주지 않아요!)</li>
-        <li>게임이 끝났을 때 <b>채우지 못한 칸</b>은 하나당 <b>+3점</b>이 더해져요.</li>
+        <li>게임이 끝났을 때 <b>채우지 못한 칸</b>은 하나당 <b>+5점</b>이 더해져요.</li>
         <li>그 점수가 <b>동점</b>이면, 경고 구역 트럭 <b>+1점</b> · 안심 구역 트럭 <b>−1점</b>을 더해 순위를 가려요.</li>
         <li>그래도 동점이면 음식 <b>건강등급 합</b>이 낮은(더 건강한) 팀 승리!</li>
-        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요. 승패와는 별개로 어느 팀이 더 건강한 음식을 골랐는지 확인할 수 있어요.</li>
+        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요. 식판을 완성하지 못한 팀은 이 순위표에서도 <b>+5점</b> 패널티가 붙어요.</li>
       </ul>
     </div>
     <div class="actions">
