@@ -1016,7 +1016,7 @@ function finishGame(){
     const carbonBonus=t.carbonKO*1;
     const base=mile+emptyPenalty-carbonBonus;
     const grade=trayGrades(t);
-    const gradePenalty=t.done?0:10;
+    const gradePenalty=emptyN*10;
     const gradeFinal=grade+gradePenalty;
     return {t, mile, emptyN, emptyPenalty, carbonBonus, warnN, safeN, zone, base, grade, gradePenalty, gradeFinal};
   });
@@ -1059,16 +1059,17 @@ function finishGame(){
     <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 상대 팀의 트럭을 맞혀서 보드 밖으로 내보낼 때마다 푸드마일리지에서 <b>−1점</b>씩 깎여요. 저탄소 실천왕은 누구일까요? 🌱</p>
     <h3 style="margin:18px 0 6px; font-size:16px; color:var(--safe-deep)">🥗 건강등급 순위표</h3>
     <table class="result">
-      <tr><th>순위</th><th>팀</th><th>미완성<br>패널티</th><th>건강등급 합</th></tr>
+      <tr><th>순위</th><th>팀</th><th>카드<br>등급 합</th><th>미완성<br>칸(+10)</th><th>최종<br>등급 점수</th></tr>
       ${gradeRows.map((r,i)=>`
         <tr class="${i===0?'win':''}">
           <td>${['🥇','🥈','🥉','4위'][i]}</td>
           <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성)</small>'}</td>
-          <td>${r.gradePenalty?'+'+r.gradePenalty:'0'}</td>
+          <td>${r.grade}</td>
+          <td>${r.emptyN?`+${r.gradePenalty} <small>(${r.emptyN}칸)</small>`:'0'}</td>
           <td class="total">${r.gradeFinal}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. 식판을 완성하지 못한 팀은 <b>+10점</b> 패널티가 더해져요. (승패와는 무관한 참고 기록이에요)</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. 채우지 못한 칸은 하나당 <b>+10점</b> 패널티가 더해져요. (승패와는 무관한 참고 기록이에요)</p>
     <h3 class="review-head">🍽️ 우리 팀은 어떤 음식을 골랐을까?</h3>
     <p style="font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:4px">
       가까운 곳에서 온 음식(🚚1~2점)을 많이 고른 팀은 어디인가요? 함께 이야기 나눠 보세요!</p>
@@ -1138,7 +1139,7 @@ window.showRules=function(fromSetup){
         <li>상대 트럭을 맞혀 보드 밖으로 내보낸 횟수만큼 <b>탄소저감 보너스 −1점</b>씩 빠져요.</li>
         <li>그 점수가 <b>동점</b>이면, 경고 구역 트럭 <b>+1점</b> · 안심 구역 트럭 <b>−1점</b>을 더해 순위를 가려요.</li>
         <li>그래도 동점이면 음식 <b>건강등급 합</b>이 낮은(더 건강한) 팀 승리!</li>
-        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요. 식판을 완성하지 못한 팀은 이 순위표에서도 <b>+10점</b> 패널티가 붙어요.</li>
+        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요. 이 순위표에서도 채우지 못한 칸 하나당 <b>+10점</b> 패널티가 붙어요.</li>
       </ul>
     </div>
     <div class="actions">
