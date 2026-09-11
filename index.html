@@ -203,6 +203,26 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
 }
 .reveal-card table.card-info td{border:1.5px solid #F2DFAE; padding:4px 6px; background:#fff;}
 
+/* 수업 모드 선택 */
+.mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 14px;}
+@media (max-width:560px){.mode-grid{grid-template-columns:1fr;}}
+.mode-card{
+  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+  border:3px solid #D6E2EE; border-radius:16px; background:#F8FBFE; padding:12px 10px;
+  font-family:'Gowun Dodum'; color:var(--ink); text-align:center; transition:.14s; position:relative;
+}
+.mode-card:hover{border-color:#9FC7E4; transform:translateY(-2px);}
+.mode-card .mode-em{font-size:30px; line-height:1.1;}
+.mode-card .mode-nm{font-family:'Jua'; font-size:17px;}
+.mode-card .mode-sub{font-size:12px; color:var(--ink-soft);}
+.mode-card .mode-desc{font-size:12px; color:var(--ink-soft); line-height:1.5; margin-top:4px;}
+.mode-card.on{border-color:var(--orange); background:#FFF9EC; box-shadow:0 5px 14px rgba(247,163,37,.22);}
+.mode-card.on::after{
+  content:'✔ 선택됨'; position:absolute; top:-11px; right:10px;
+  font-family:'Jua'; font-size:11px; color:#fff; background:var(--orange);
+  border-radius:999px; padding:2px 10px;
+}
+
 /* 설정 화면 */
 .setup-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0;}
 @media (max-width:520px){.setup-grid{grid-template-columns:1fr;}}
@@ -458,6 +478,25 @@ const CX=310, CY=415, R_CENTER=65, R_INNER=135, R_BLUE=235;
 const HACK={x:310,y:875}, STONE_R=17;
 
 /* ══════════════════ 상태 ══════════════════ */
+// 수업 모드: 'health'(1차시 건강 식생활) / 'mile'(2차시 푸드마일리지)
+const MODES = {
+  health:{
+    key:'health', name:'건강 식생활 게임', sub:'1차시 · 균형 잡힌 식판',
+    emoji:'🥗', color:'var(--safe)',
+    scoreLabel:'건강등급', scoreIcon:'🥗',
+    // 점수: 카드 건강등급 합(낮을수록 건강) + 빈 칸 패널티
+    metric:c=>c.g, badThreshold:4,
+  },
+  mile:{
+    key:'mile', name:'푸드마일리지 게임', sub:'2차시 · 가까운 곳에서 온 음식',
+    emoji:'🚚', color:'var(--ring-blue-deep)',
+    scoreLabel:'푸드마일리지', scoreIcon:'🚚',
+    // 점수: 카드 마일리지 합 + 빈 칸 패널티 − 탄소저감 보너스
+    metric:c=>c.m, badThreshold:5,
+  },
+};
+let gameMode=MODES.mile;
+const isHealth=()=>gameMode.key==='health';
 let teams=[], stones=[], curIdx=0, endNo=1, phase='setup';
 let doneOrder=[]; let quizPoolH=[], quizPoolE=[];
 let takenCardIds=new Set();
@@ -503,9 +542,24 @@ function showSetup(names){
   const nm=names||['1팀','2팀','3팀','4팀'];
   openModal(`
     <span class="eyebrow">GAME START</span>
-    <h2>🚚 건강급식 컬링에 온 걸 환영해요!</h2>
-    <p>4개 팀이 트럭 스톤을 <b>팀당 6개</b>씩 발사해서 음식 카드를 모으고,
-       <b>가장 낮은 푸드마일리지</b>로 급식 식판을 완성하는 팀이 승리해요! 카드는 뒤집어야 점수를 알 수 있고, 한 번 선택된 카드는 다른 팀이 가져갈 수 없어요.</p>
+    <h2>🥌 건강급식 컬링에 온 걸 환영해요!</h2>
+    <p style="margin-bottom:4px">오늘은 어떤 수업으로 게임을 할까요? <b>모드를 먼저 골라 주세요.</b></p>
+    <div class="mode-grid">
+      <button class="mode-card ${isHealth()?'on':''}" data-mode="health" onclick="pickMode('health')">
+        <span class="mode-em">🥗</span>
+        <span class="mode-nm">건강 식생활 게임</span>
+        <span class="mode-sub">1차시 · 균형 잡힌 식판</span>
+        <span class="mode-desc">식판을 골고루 채우고 <b>건강등급 합이 낮은</b> 팀이 승리!<br>푸드마일리지 점수는 계산하지 않아요.</span>
+      </button>
+      <button class="mode-card ${isHealth()?'':'on'}" data-mode="mile" onclick="pickMode('mile')">
+        <span class="mode-em">🚚</span>
+        <span class="mode-nm">푸드마일리지 게임</span>
+        <span class="mode-sub">2차시 · 가까운 곳에서 온 음식</span>
+        <span class="mode-desc">같은 식판이라도 산지에 따라 점수가 달라요.<br><b>마일리지 합이 낮은</b> 팀이 승리!</span>
+      </button>
+    </div>
+    <p style="font-size:13px;color:var(--ink-soft)">4개 팀이 트럭 스톤을 <b>팀당 6개</b>씩 발사해서 음식 카드를 모아요.
+       카드는 뒤집어야 점수를 알 수 있고, 한 번 선택된 카드는 다른 팀이 가져갈 수 없어요.</p>
     <div class="setup-grid">
       ${[0,1,2,3].map(i=>`
         <div class="setup-team">
@@ -518,6 +572,11 @@ function showSetup(names){
       <button class="btn pink big" onclick="startGame()">🥌 게임 시작!</button>
     </div>`);
 }
+window.pickMode=function(key){
+  gameMode=MODES[key];
+  document.querySelectorAll('.mode-card').forEach(b=>b.classList.toggle('on', b.dataset.mode===key));
+  drawBoard();
+};
 window.startGame=function(){
   const names=[0,1,2,3].map(i=>($('#tn'+i)?.value.trim()||`${i+1}팀`));
   teams=names.map((n,i)=>({
@@ -527,20 +586,22 @@ window.startGame=function(){
   stones=[]; doneOrder=[]; curIdx=0; endNo=1; takenCardIds=new Set();
   quizPoolH=shuffle([...QUIZ_HEALTH]); quizPoolE=shuffle([...QUIZ_ECO]);
   closeModal(); renderTeams(); spawnStone(); phase='aim'; updateTurnUI();
-  toast(`${teams[0].name}부터 시작! 트럭을 당겨서 발사하세요 🚚`);
+  toast(`${gameMode.emoji} ${gameMode.name} 시작! ${teams[0].name}부터 트럭을 발사하세요`);
 };
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 /* ══════════════════ 팀 UI ══════════════════ */
 function trayMileage(t){return SLOTS.reduce((s,sl)=>s+(t.tray[sl.id]?t.tray[sl.id].m:0),0);}
 function trayGrades(t){return SLOTS.reduce((s,sl)=>s+(t.tray[sl.id]?t.tray[sl.id].g:0),0);}
+function trayScore(t){return isHealth()?trayGrades(t):trayMileage(t);}
 function mileClass(m){return m<=2?'low':m<=6?'mid':'high';}
+function gradeClass(g){return g<=2?'low':g<=3?'mid':'high';}
 function renderTeams(){
   $('#teams').innerHTML=teams.map((t,i)=>`
     <div class="team-card ${i===curIdx&&phase!=='finished'?'active':''} ${t.done?'done':''}" style="--tc:${t.color}">
       <div class="team-head">
         <span class="team-dot"></span><span class="team-name">${t.name}</span>
-        <span class="team-mile">🚚 <b>${trayMileage(t)}</b>점</span>
+        <span class="team-mile">${gameMode.scoreIcon} <b>${trayScore(t)}</b>점</span>
       </div>
       <div class="stones">${Array.from({length:STONES_PER_END},(_,k)=>
         `<span class="${k < STONES_PER_END-t.stonesLeft ? 'used':''}">🚚</span>`).join('')}</div>
@@ -548,7 +609,7 @@ function renderTeams(){
         ${SLOTS.map(sl=>{
           const c=t.tray[sl.id];
           return c
-            ? `<div class="slot filled" data-slot="${sl.id}" title="${c.n} · ${c.o} · 이동거리 ${c.km} · 마일리지 ${c.m}점 · ${c.g}등급"><span class="em">${c.e}</span><span>${c.n}</span><span class="mile-tag">🚚${c.m} · ${c.g}등급</span></div>`
+            ? `<div class="slot filled" data-slot="${sl.id}" title="${c.n} · ${c.o}${isHealth()?'':` · 이동거리 ${c.km} · 마일리지 ${c.m}점`} · ${c.g}등급"><span class="em">${c.e}</span><span>${c.n}</span><span class="mile-tag">${isHealth()?`${c.g}등급`:`🚚${c.m} · ${c.g}등급`}</span></div>`
             : `<div class="slot" data-slot="${sl.id}"><span class="em">${sl.e}</span><span>${sl.label}</span></div>`;
         }).join('')}
       </div>
@@ -558,7 +619,7 @@ function updateTurnUI(){
   const t=teams[curIdx];
   $('#turnWho').textContent=t?t.name+' 차례':'-';
   $('#turnWho').style.color=t?t.color:'inherit';
-  $('#endInfo').textContent=`${endNo}엔드 · 팀당 트럭 ${STONES_PER_END}대`;
+  $('#endInfo').textContent=`${gameMode.emoji} ${gameMode.name} · ${endNo}엔드 · 팀당 트럭 ${STONES_PER_END}대`;
   renderTeams();
 }
 
@@ -601,10 +662,10 @@ function drawBoard(){
   ctx.fillStyle='#FFFFFF'; ctx.fillRect(WALL_L,WARN_T,WALL_R-WALL_L,SAFE_B-WARN_T);
   // 경고 구역
   ctx.fillStyle='#FFC53D'; ctx.fillRect(WALL_L,WARN_T,WALL_R-WALL_L,WARN_B-WARN_T);
-  txt('⚠️ 푸드마일리지 경고 구역 (+1점)', CX, (WARN_T+WARN_B)/2, 22, '#7A5200');
+  txt('⚠️ 경고 구역 · 카드 없음', CX, (WARN_T+WARN_B)/2, 22, '#7A5200');
   // 안심 구역
   ctx.fillStyle='#6BA84F'; ctx.fillRect(WALL_L,HOUSE_B,WALL_R-WALL_L,SAFE_B-HOUSE_B);
-  txt('🌱 푸드마일리지 안심 구역 (−1점)', CX, (HOUSE_B+SAFE_B)/2, 22, '#FFFFFF');
+  txt('🌱 안심 구역 · 카드 없음', CX, (HOUSE_B+SAFE_B)/2, 22, '#FFFFFF');
   // 하우스: 십자선
   ctx.strokeStyle='#D9E5EF'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(CX,WARN_B); ctx.lineTo(CX,HOUSE_B);
@@ -680,9 +741,12 @@ function physicsStep(){
       // 아웃 판정 (좌/우/위)
       if(s.x<WALL_L-STONE_R||s.x>WALL_R+STONE_R||s.y<WARN_T-STONE_R){
         s.out=true; s.vx=0; s.vy=0;
-        if(s.hitByTeam!==null && s.hitByTeam!==s.team){
+        const ko = s.hitByTeam!==null && s.hitByTeam!==s.team;
+        if(ko && !isHealth()){
           teams[s.hitByTeam].carbonKO++;
           toast(`${teams[s.hitByTeam].name}이(가) ${teams[s.team].name} 트럭을 쳐서 밖으로! 🌍 탄소저감 보너스 −1점!`);
+        } else if(ko){
+          toast(`${teams[s.hitByTeam].name}이(가) ${teams[s.team].name} 트럭을 밖으로 밀어냈어요! 🚧`);
         } else {
           toast(`${teams[s.team].name} 트럭이 밖으로 나갔어요! 🚧`);
         }
@@ -773,15 +837,14 @@ function resolveThrow(){
     case 'start': toast('너무 약했어요! 스타트 구역에 머물러서 카드가 없어요.'); endTurn(); break;
     case 'warn':
       openModal(`<span class="eyebrow warn">경고 구역</span>
-        <h2>⚠️ 푸드마일리지 경고 구역!</h2>
-        <p>카드는 없어요. 게임이 끝날 때 트럭이 이곳에 남아 있으면, 마일리지가 동점인 팀끼리 순위를 가릴 때 <b>+1점</b>이 더해져요!<br>
-        다음 트럭으로 밀어내는 것도 작전이에요. 🚚</p>
+        <h2>⚠️ 경고 구역에 멈췄어요!</h2>
+        <p>이번에는 카드를 얻지 못했어요. 점수에는 영향이 없으니 다음 트럭으로 다시 도전해요! 🚚</p>
         <div class="actions"><button class="btn" onclick="closeModal();endTurn()">확인</button></div>`);
       break;
     case 'safe':
       openModal(`<span class="eyebrow eco">안심 구역</span>
-        <h2>🌱 푸드마일리지 안심 구역!</h2>
-        <p>카드는 없지만, 게임이 끝날 때 트럭이 이곳에 남아 있으면, 마일리지가 동점인 팀끼리 순위를 가릴 때 <b>−1점</b>! 점수가 줄어드는 행운의 자리예요.</p>
+        <h2>🌱 안심 구역에 멈췄어요!</h2>
+        <p>이번에는 카드를 얻지 못했어요. 점수에는 영향이 없으니 다음 트럭으로 다시 도전해요! 🚚</p>
         <div class="actions"><button class="btn green" onclick="closeModal();endTurn()">확인</button></div>`);
       break;
     case 'center':
@@ -812,11 +875,14 @@ window.answerQuiz=function(btn,i,a){
     btn.classList.add('wrong');
     document.querySelectorAll('.opt-btn')[a].classList.add('correct');
     beep(200,.25,'sawtooth',.1);
-    setTimeout(()=>randomCard('❌ 아쉬워요! 푸드마일리지가 가장 높은 카드를 받아요.',0,true),1000);
+    setTimeout(()=>randomCard(isHealth()
+      ?'❌ 아쉬워요! 건강등급이 가장 낮은 카드를 받아요.'
+      :'❌ 아쉬워요! 푸드마일리지가 가장 높은 카드를 받아요.',0,true),1000);
   }
 };
 function openMission(key){
   const m=MISSIONS[key], t=teams[curIdx];
+  const failLabel = isHealth() ? '건강등급 4~5등급인 랜덤 카드' : '푸드마일리지 5점 이상인 랜덤 카드';
   let extra='';
   if(key==='veggie'){
     const combo=VEGGIE_COMBOS[Math.floor(Math.random()*VEGGIE_COMBOS.length)];
@@ -835,10 +901,10 @@ function openMission(key){
     <h2 style="text-align:center">${m.t}</h2>
     <p style="text-align:center">${m.d}</p>
     ${extra}
-    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${t.name}이(가) 성공하면 <b>원하는 카드</b>, 실패하면 <b>푸드마일리지 5점 이상인 랜덤 카드</b>!<br>선생님이 판정해 주세요 👩‍🏫</p>
+    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${t.name}이(가) 성공하면 <b>원하는 카드</b>, 실패하면 <b>${failLabel}</b>!<br>선생님이 판정해 주세요 👩‍🏫</p>
     <div class="actions">
       <button class="btn green big" onclick="openCardPicker('🎉 미션 성공! <b>${t.name}</b>, 원하는 음식 카드를 골라요!')">✅ 미션 성공</button>
-      <button class="btn big" style="background:#8CA0B8" onclick="randomCard('미션 실패! 푸드마일리지 5점 이상인 랜덤 카드를 뽑아요.',5)">❌ 미션 실패</button>
+      <button class="btn big" style="background:#8CA0B8" onclick="randomCard('미션 실패! ${failLabel}를 뽑아요.',${gameMode.badThreshold})">❌ 미션 실패</button>
     </div>`);
 }
 window.startCount=function(btn){
@@ -858,7 +924,7 @@ window.openCardPicker=function(title){
   openModal(`
     <span class="eyebrow">음식 카드 고르기</span>
     <h2 style="font-size:21px">${title}</h2>
-    <p style="font-size:13px;color:var(--ink-soft)">🔍 카드를 고르면 뒷면에서 <b>푸드마일리지</b>와 <b>건강등급</b>을 확인할 수 있어요! 한 번 선택된 카드는 다른 팀이 고를 수 없어요.</p>
+    <p style="font-size:13px;color:var(--ink-soft)">🔍 카드를 고르면 뒷면에서 <b>${isHealth()?'건강등급':'푸드마일리지와 건강등급'}</b>을 확인할 수 있어요! 한 번 선택된 카드는 다른 팀이 고를 수 없어요.</p>
     <div class="card-grid">
       ${cats.map(cat=>{
         const usable=emptySlotsFor(t,cat).length>0;
@@ -877,48 +943,49 @@ window.openCardPicker=function(title){
       }).join('')}
     </div>`);
 };
+// 카드 뒷면: 건강 모드에서는 푸드마일리지 정보를 감추고 건강등급만 보여줘요.
+function cardBackHTML(c){
+  return `
+    <div class="reveal-card">
+      <div class="gr-tag g${c.g}">건강 등급 : ${c.g}등급</div>
+      <div class="em" style="--tint:${CAT_TINT[c.c]}">${c.e}</div><div class="nm">${c.n}</div>
+      <table class="card-info">
+        <tr><th>분류</th><td>${c.c}</td></tr>
+        <tr><th>원산지</th><td>${c.o}</td></tr>
+        ${isHealth()?'':`
+        <tr><th>이동거리</th><td>${c.km}</td></tr>
+        <tr><th>푸드마일리지</th><td><b>${c.m}점</b></td></tr>`}
+      </table>
+    </div>`;
+}
 window.revealCard=function(c){
   openModal(`
     <span class="eyebrow">카드 뒤집기</span>
     <h2 style="text-align:center;font-size:21px">🔄 「${c.n}」 카드를 뒤집었어요!</h2>
-    <div class="reveal-card">
-      <div class="gr-tag g${c.g}">건강 등급 : ${c.g}등급</div>
-      <div class="em" style="--tint:${CAT_TINT[c.c]}">${c.e}</div><div class="nm">${c.n}</div>
-      <table class="card-info">
-        <tr><th>분류</th><td>${c.c}</td></tr>
-        <tr><th>원산지</th><td>${c.o}</td></tr>
-        <tr><th>이동거리</th><td>${c.km}</td></tr>
-        <tr><th>푸드마일리지</th><td><b>${c.m}점</b></td></tr>
-      </table>
-    </div>
+    ${cardBackHTML(c)}
     <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>✅ 이 카드로 받기</button></div>`);
 };
-window.randomCard=function(msg,minMile,worst){
-  minMile=minMile||0;
-  let pool=CARDS.filter(c=>!isTaken(c) && c.m>=minMile);
+// 퀴즈 오답·미션 실패 때 주는 카드. 점수 기준은 모드에 따라 달라져요.
+// worst=true면 기준 점수가 가장 나쁜(높은) 카드, 아니면 기준 점수 이상인 카드 중 랜덤.
+window.randomCard=function(msg,minScore,worst){
+  const metric=gameMode.metric;
+  minScore=minScore||0;
+  let pool=CARDS.filter(c=>!isTaken(c) && metric(c)>=minScore);
   if(!pool.length) pool=CARDS.filter(c=>!isTaken(c));
   if(!pool.length) pool=CARDS;
   let c;
   if(worst){
-    const maxM=Math.max(...pool.map(x=>x.m));
-    const top=pool.filter(x=>x.m===maxM);
+    const worstV=Math.max(...pool.map(metric));
+    const top=pool.filter(x=>metric(x)===worstV);
     c=top[Math.floor(Math.random()*top.length)];
   } else {
     c=pool[Math.floor(Math.random()*pool.length)];
   }
+  const label = worst ? (isHealth()?'건강등급이 가장 낮은 카드':'최고 마일리지 카드') : '랜덤 카드';
   openModal(`
-    <span class="eyebrow mission">${worst?'최고 마일리지 카드':'랜덤 카드'}</span>
+    <span class="eyebrow mission">${label}</span>
     <h2 style="text-align:center;font-size:22px">${msg}</h2>
-    <div class="reveal-card">
-      <div class="gr-tag g${c.g}">건강 등급 : ${c.g}등급</div>
-      <div class="em" style="--tint:${CAT_TINT[c.c]}">${c.e}</div><div class="nm">${c.n}</div>
-      <table class="card-info">
-        <tr><th>분류</th><td>${c.c}</td></tr>
-        <tr><th>원산지</th><td>${c.o}</td></tr>
-        <tr><th>이동거리</th><td>${c.km}</td></tr>
-        <tr><th>푸드마일리지</th><td><b>${c.m}점</b></td></tr>
-      </table>
-    </div>
+    ${cardBackHTML(c)}
     <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>카드 받기</button></div>`);
 };
 window.gotCard=function(c){
@@ -980,7 +1047,7 @@ function endTurn(){
       <h2>🥌 ${endNo}엔드가 끝났어요!</h2>
       <p>아직 식판을 완성하지 못한 팀이 있어요. 다음 엔드를 시작하면 보드의 트럭이 모두 치워지고
       각 팀은 새 트럭 ${STONES_PER_END}대를 받아요.</p>
-      <p style="font-size:13px;color:var(--ink-soft)">※ 경고/안심 구역 점수는 <b>게임을 종료하는 순간</b>의 보드로만 계산돼요.</p>
+      <p style="font-size:13px;color:var(--ink-soft)">※ 채우지 못한 칸은 게임이 끝날 때 하나당 <b>+10점</b>이 더해져요.</p>
       <div class="actions">
         <button class="btn orange big" onclick="nextEnd()">▶️ 다음 엔드 시작</button>
         <button class="btn big" onclick="closeModal();finishGame()">🏁 여기서 게임 종료</button>
@@ -1000,51 +1067,63 @@ window.nextEnd=function(){
 };
 
 /* ══════════════════ 게임 종료 & 점수 ══════════════════ */
+// 동점이면 같은 메달을 주는 순위 계산
+function medals(list, scoreOf){
+  let last=null, lastMedal='';
+  return list.map((r,i)=>{
+    const s=scoreOf(r);
+    const medal = (s===last) ? lastMedal : ['🥇','🥈','🥉','4위'][i];
+    last=s; lastMedal=medal;
+    return medal;
+  });
+}
 function finishGame(){
   phase='finished'; aim=null;
+  const health=isHealth();
   const rows=teams.map(t=>{
-    const mile=trayMileage(t);
     const emptyN=SLOTS.filter(s=>!t.tray[s.id]).length;
-    let warnN=0,safeN=0;
-    stones.forEach(s=>{
-      if(s.out||s.team!==t.idx) return;
-      const z=zoneOf(s);
-      if(z==='warn') warnN++; if(z==='safe') safeN++;
-    });
-    const zone=warnN*1-safeN*1;
     const emptyPenalty=emptyN*10;
-    const carbonBonus=t.carbonKO*1;
-    const base=mile+emptyPenalty-carbonBonus;
+    const mile=trayMileage(t);
     const grade=trayGrades(t);
-    const gradePenalty=emptyN*10;
-    const gradeFinal=grade+gradePenalty;
-    return {t, mile, emptyN, emptyPenalty, carbonBonus, warnN, safeN, zone, base, grade, gradePenalty, gradeFinal};
+    // 탄소저감 보너스는 푸드마일리지 게임에서만 적용
+    const carbonBonus=health?0:t.carbonKO;
+    const gradeFinal=grade+emptyPenalty;
+    const mileFinal=mile+emptyPenalty-carbonBonus;
+    return {t, emptyN, emptyPenalty, mile, grade, carbonBonus, gradeFinal, mileFinal,
+            final: health?gradeFinal:mileFinal};
   });
-  // 마일리지+미완성 패널티-탄소저감 보너스(base)가 같은 팀끼리만 구역 점수를 더해 동점을 가려요.
-  rows.forEach(r=>{ r.tied = rows.some(x=>x!==r && x.base===r.base); r.final = r.tied ? r.base+r.zone : r.base; });
-  rows.sort((a,b)=>a.base-b.base || a.zone-b.zone || a.grade-b.grade);
+  // 건강 모드: 건강등급 합 / 마일리지 모드: 마일리지 합 (동점이면 반대쪽 지표로 가려요)
+  rows.sort((a,b)=>health
+    ? (a.final-b.final || a.emptyN-b.emptyN)
+    : (a.final-b.final || a.grade-b.grade));
   const win=rows[0];
-  const gradeRows=[...rows].sort((a,b)=>a.gradeFinal-b.gradeFinal);
+  const mainMedals=medals(rows, r=>r.final);
+  const subRows=[...rows].sort((a,b)=>health?(a.mile-b.mile):(a.gradeFinal-b.gradeFinal));
+  const subMedals=medals(subRows, r=>health?r.mile:r.gradeFinal);
   const carbonRows=[...rows].sort((a,b)=>b.t.carbonKO-a.t.carbonKO);
   confetti();
   openModal(`
-    <span class="eyebrow eco">최종 결과</span>
+    <span class="eyebrow eco">${gameMode.emoji} ${gameMode.name} · 최종 결과</span>
     <div class="winner-line">🏆 우승: <span style="color:${win.t.color}">${win.t.name}</span> (최종 ${win.final}점)</div>
-    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">푸드마일리지가 <b>가장 낮은</b> 팀이 승리! 가까운 곳 음식이 지구를 지켜요 🌍</p>
+    <p style="text-align:center;font-size:14px;color:var(--ink-soft)">${health
+      ? '<b>건강등급 합이 가장 낮은</b> 팀이 승리! 골고루 담은 식판이 나를 튼튼하게 해요 🥗'
+      : '<b>푸드마일리지가 가장 낮은</b> 팀이 승리! 가까운 곳 음식이 지구를 지켜요 🌍'}</p>
     <table class="result">
-      <tr><th>순위</th><th>팀</th><th>카드<br>마일리지</th><th>미완성<br>칸(+10)</th><th>🌍탄소저감<br>(−1)</th><th>⚠️경고<br>(+1)</th><th>🌱안심<br>(−1)</th><th>최종점수</th></tr>
+      <tr><th>순위</th><th>팀</th><th>카드<br>${health?'건강등급 합':'마일리지'}</th><th>미완성<br>칸(+10)</th>${health?'':'<th>🌍탄소저감<br>(−1)</th>'}<th>최종점수</th></tr>
       ${rows.map((r,i)=>`
         <tr class="${i===0?'win':''}">
-          <td>${['🥇','🥈','🥉','4위'][i]}</td>
+          <td>${mainMedals[i]}</td>
           <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성)</small>'}</td>
-          <td>${r.mile}</td>
+          <td>${health?r.grade:r.mile}</td>
           <td>${r.emptyN?`+${r.emptyPenalty} <small>(${r.emptyN}칸)</small>`:'0'}</td>
-          <td>${r.carbonBonus?`−${r.carbonBonus}`:'0'}</td>
-          <td>${r.warnN?'+'+r.warnN:'0'}</td><td>${r.safeN?'−'+r.safeN:'0'}</td>
+          ${health?'':`<td>${r.carbonBonus?`−${r.carbonBonus}`:'0'}</td>`}
           <td class="total">${r.final}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 완성 순서는 점수에 영향을 주지 않지만, 채우지 못한 칸은 하나당 <b>+10점</b>이 더해져요. 상대 트럭을 맞혀 보드 밖으로 내보내면 <b>탄소저감 보너스 −1점</b>! 이 점수까지 같은 팀은 경고(+1)·안심(−1) 구역 트럭 개수를 더해 순위를 가리고, 그래도 같으면 음식 건강등급 합이 낮은(더 건강한) 팀이 이겨요.</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 완성 순서는 점수에 영향을 주지 않지만, 채우지 못한 칸은 하나당 <b>+10점</b>이 더해져요. ${health
+      ? '이번 수업에서는 푸드마일리지 점수를 계산하지 않아요. 동점이면 칸을 더 많이 채운 팀이 이겨요.'
+      : '상대 트럭을 맞혀 보드 밖으로 내보내면 <b>탄소저감 보너스 −1점</b>! 동점이면 음식 건강등급 합이 낮은(더 건강한) 팀이 이겨요.'}</p>
+    ${health?'':`
     <h3 style="margin:18px 0 6px; font-size:16px; color:var(--ring-blue-deep)">🌍 탄소저감보너스 점수판</h3>
     <table class="result">
       <tr><th>순위</th><th>팀</th><th>상대 트럭 아웃시킨 횟수</th><th>보너스</th></tr>
@@ -1056,42 +1135,51 @@ function finishGame(){
           <td class="total">${r.carbonBonus?'−'+r.carbonBonus:'0'}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 상대 팀의 트럭을 맞혀서 보드 밖으로 내보낼 때마다 푸드마일리지에서 <b>−1점</b>씩 깎여요. 저탄소 실천왕은 누구일까요? 🌱</p>
-    <h3 style="margin:18px 0 6px; font-size:16px; color:var(--safe-deep)">🥗 건강등급 순위표</h3>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 상대 팀의 트럭을 맞혀서 보드 밖으로 내보낼 때마다 푸드마일리지에서 <b>−1점</b>씩 깎여요. 저탄소 실천왕은 누구일까요? 🌱</p>`}
+    <h3 style="margin:18px 0 6px; font-size:16px; color:${health?'var(--ring-blue-deep)':'var(--safe-deep)'}">${health?'🚚 참고: 푸드마일리지 기록':'🥗 건강등급 순위표'}</h3>
     <table class="result">
-      <tr><th>순위</th><th>팀</th><th>카드<br>등급 합</th><th>미완성<br>칸(+10)</th><th>최종<br>등급 점수</th></tr>
-      ${gradeRows.map((r,i)=>`
+      <tr><th>순위</th><th>팀</th>${health
+        ? '<th>카드 마일리지 합</th>'
+        : '<th>카드<br>등급 합</th><th>미완성<br>칸(+10)</th><th>최종<br>등급 점수</th>'}</tr>
+      ${subRows.map((r,i)=>`
         <tr class="${i===0?'win':''}">
-          <td>${['🥇','🥈','🥉','4위'][i]}</td>
+          <td>${subMedals[i]}</td>
           <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성)</small>'}</td>
-          <td>${r.grade}</td>
-          <td>${r.emptyN?`+${r.gradePenalty} <small>(${r.emptyN}칸)</small>`:'0'}</td>
-          <td class="total">${r.gradeFinal}</td>
+          ${health
+            ? `<td class="total">${r.mile}</td>`
+            : `<td>${r.grade}</td>
+               <td>${r.emptyN?`+${r.emptyPenalty} <small>(${r.emptyN}칸)</small>`:'0'}</td>
+               <td class="total">${r.gradeFinal}</td>`}
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. 채우지 못한 칸은 하나당 <b>+10점</b> 패널티가 더해져요. (승패와는 무관한 참고 기록이에요)</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">${health
+      ? '※ 이번 수업의 승패와는 상관없는 참고 기록이에요. 다음 시간에는 이 <b>푸드마일리지</b> 점수로 게임을 해요! 🚚'
+      : '※ 등급 합이 낮을수록 더 건강한 음식으로 식판을 채운 팀이에요. 채우지 못한 칸은 하나당 <b>+10점</b> 패널티가 더해져요. (승패와는 무관한 참고 기록이에요)'}</p>
     <h3 class="review-head">🍽️ 우리 팀은 어떤 음식을 골랐을까?</h3>
-    <p style="font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:4px">
-      가까운 곳에서 온 음식(🚚1~2점)을 많이 고른 팀은 어디인가요? 함께 이야기 나눠 보세요!</p>
+    <p style="font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:4px">${health
+      ? '식판을 골고루 채웠나요? 건강등급이 좋은 음식(1~2등급)을 많이 고른 팀은 어디인가요?'
+      : '가까운 곳에서 온 음식(🚚1~2점)을 많이 고른 팀은 어디인가요? 함께 이야기 나눠 보세요!'}</p>
     ${rows.map(r=>`
       <div class="review-team" style="--tc:${r.t.color}">
         <div class="review-name">
           <span class="team-dot"></span>${r.t.name}
-          <span class="review-sum">🚚 마일리지 <b>${r.mile}</b>점 · 건강등급 합 ${r.grade}</span>
+          <span class="review-sum">${health
+            ? `🥗 건강등급 합 <b>${r.grade}</b>`
+            : `🚚 마일리지 <b>${r.mile}</b>점 · 건강등급 합 ${r.grade}`}</span>
         </div>
         <table class="review-table">
-          <tr><th>식판 칸</th><th>음식</th><th>원산지</th><th>이동거리</th><th>🚚</th><th>등급</th></tr>
+          <tr><th>식판 칸</th><th>음식</th><th>원산지</th>${health?'':'<th>이동거리</th><th>🚚</th>'}<th>등급</th></tr>
           ${SLOTS.map(sl=>{
             const c=r.t.tray[sl.id];
             return c
               ? `<tr>
                    <td class="sl">${sl.label}</td>
                    <td class="fd">${c.e} ${c.n}</td>
-                   <td>${c.o}</td><td>${c.km}</td>
-                   <td><span class="mi ${mileClass(c.m)}">${c.m}</span></td>
+                   <td>${c.o}</td>
+                   ${health?'':`<td>${c.km}</td><td><span class="mi ${mileClass(c.m)}">${c.m}</span></td>`}
                    <td><span class="gr g${c.g}">${c.g}</span></td>
                  </tr>`
-              : `<tr class="empty"><td class="sl">${sl.label}</td><td colspan="5">비어 있어요</td></tr>`;
+              : `<tr class="empty"><td class="sl">${sl.label}</td><td colspan="${health?3:5}">비어 있어요</td></tr>`;
           }).join('')}
         </table>
       </div>`).join('')}
@@ -1107,39 +1195,45 @@ function openModal(html){ $('#modalBox').innerHTML=html; $('#overlay').classList
 window.closeModal=function(){ $('#overlay').classList.add('hidden'); };
 
 window.showRules=function(fromSetup){
+  const health=isHealth();
   openModal(`
     <span class="eyebrow">게임 방법</span>
-    <h2>🚚 건강급식 컬링, 이렇게 놀아요!</h2>
+    <h2>${gameMode.emoji} ${gameMode.name}, 이렇게 놀아요!</h2>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:2px">${gameMode.sub} · 시작 화면에서 수업 모드를 바꿀 수 있어요.</p>
     <div class="rules">
       <h3>1. 트럭 발사하기</h3>
       <ul>
         <li>4개 팀이 차례대로 <b>트럭 스톤(팀당 6대)</b>을 발사해요.</li>
         <li>트럭을 누른 채 <b>아래로 당겼다 놓으면</b> 반대 방향으로 슝! 다른 팀 트럭을 밀어낼 수도 있어요.</li>
-        <li>🌍 <b>탄소저감 보너스</b>: 내 트럭으로 상대 팀 트럭을 맞혀서 보드 밖으로 내보내면, 최종 점수에서 <b>−1점</b>을 깎아주는 보너스를 받아요!</li>
+        ${health?'':'<li>🌍 <b>탄소저감 보너스</b>: 내 트럭으로 상대 팀 트럭을 맞혀서 보드 밖으로 내보내면, 최종 점수에서 <b>−1점</b>을 깎아주는 보너스를 받아요!</li>'}
       </ul>
       <h3>2. 멈춘 자리에서 이벤트!</h3>
       <ul>
         <li>🎯 <b>가운데 주황 원</b>: 원하는 음식 카드를 바로 획득!</li>
-        <li>⚪ <b>안쪽 흰색 링</b>: 저탄소·환경 퀴즈 / 🔵 <b>파란 링</b>: 건강 식생활 퀴즈 — 맞히면 원하는 카드, 틀리면 <b>푸드마일리지가 가장 높은 카드</b>를 받아요</li>
-        <li>💪 <b>네 모서리</b>: 몸으로 하는 미션(가위바위보·스쿼트·런지·색깔 채소 말하기) — 성공하면 원하는 카드, 실패하면 랜덤 카드</li>
-        <li>⚠️ <b>경고 구역</b>: 카드 없음, 마일리지 동점 시 그곳의 트럭 1대당 <b>+1점</b></li>
-        <li>🌱 <b>안심 구역</b>: 카드 없음, 마일리지 동점 시 트럭 1대당 <b>−1점</b></li>
+        <li>⚪ <b>안쪽 흰색 링</b>: 저탄소·환경 퀴즈 / 🔵 <b>파란 링</b>: 건강 식생활 퀴즈 — 맞히면 원하는 카드, 틀리면 <b>${health?'건강등급이 가장 낮은 카드':'푸드마일리지가 가장 높은 카드'}</b>를 받아요</li>
+        <li>💪 <b>네 모서리</b>: 몸으로 하는 미션(가위바위보·스쿼트·런지·색깔 채소 말하기) — 성공하면 원하는 카드, 실패하면 <b>${health?'건강등급 4~5등급':'푸드마일리지 5점 이상'}인 랜덤 카드</b></li>
+        <li>⚠️ <b>경고 구역</b> · 🌱 <b>안심 구역</b>: 카드도 점수도 없어요. 다음 트럭으로 다시 도전!</li>
       </ul>
       <h3>3. 카드 뒤집고 식판 완성하기</h3>
       <ul>
-        <li>음식 카드는 앞면에 <b>그림과 이름(주 재료 원산지)</b>만 보여요. 카드를 고르면 뒷면에서 <b>푸드마일리지</b>와 <b>건강등급</b>이 공개돼요!</li>
+        <li>음식 카드는 앞면에 <b>그림과 이름(주 재료 원산지)</b>만 보여요. 카드를 고르면 뒷면에서 <b>${health?'건강등급':'푸드마일리지와 건강등급'}</b>이 공개돼요!</li>
         <li>한 번 선택된 카드는 <b>다른 팀이 고를 수 없어요</b>. 먼저 고르는 팀이 임자!</li>
         <li>식판 6칸: 밥 · 국 · 나물반찬 · 김치 · 단백질반찬 · 후식</li>
         <li>모든 팀이 6대를 다 쓰면 다음 엔드! 트럭을 새로 받아 계속해요.</li>
       </ul>
       <h3>4. 점수 계산 (낮을수록 승리!)</h3>
       <ul>
+        ${health?`
+        <li>식판에 모은 카드의 <b>건강등급 합</b>으로 순위를 매겨요. 1등급에 가까운 음식을 고를수록 점수가 낮아요.</li>
+        <li>이번 수업에서는 <b>푸드마일리지 점수를 계산하지 않아요.</b> (결과 화면에 참고 기록으로만 보여줘요)</li>
+        <li>게임이 끝났을 때 <b>채우지 못한 칸</b>은 하나당 <b>+10점</b>이 더해져요. 식판을 골고루 채우는 게 중요해요!</li>
+        <li>동점이면 칸을 더 많이 채운 팀이 이겨요.</li>`:`
         <li>식판에 모은 카드의 <b>푸드마일리지 점수 합</b>으로 순위를 매겨요. (식판을 먼저 완성한 순서는 점수에 영향을 주지 않아요!)</li>
         <li>게임이 끝났을 때 <b>채우지 못한 칸</b>은 하나당 <b>+10점</b>이 더해져요.</li>
         <li>상대 트럭을 맞혀 보드 밖으로 내보낸 횟수만큼 <b>탄소저감 보너스 −1점</b>씩 빠져요.</li>
-        <li>그 점수가 <b>동점</b>이면, 경고 구역 트럭 <b>+1점</b> · 안심 구역 트럭 <b>−1점</b>을 더해 순위를 가려요.</li>
-        <li>그래도 동점이면 음식 <b>건강등급 합</b>이 낮은(더 건강한) 팀 승리!</li>
-        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요. 이 순위표에서도 채우지 못한 칸 하나당 <b>+10점</b> 패널티가 붙어요.</li>
+        <li>동점이면 음식 <b>건강등급 합</b>이 낮은(더 건강한) 팀 승리!</li>
+        <li>결과 화면 아래에는 <b>건강등급 순위표</b>도 따로 보여줘요.</li>`}
+        <li>결과 화면 맨 아래에서 <b>팀별로 고른 음식</b>을 모두 확인할 수 있어요.</li>
       </ul>
     </div>
     <div class="actions">
