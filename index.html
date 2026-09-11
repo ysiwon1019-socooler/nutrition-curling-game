@@ -1008,7 +1008,7 @@ window.placeCard=function(c,slotId){
   const t=teams[curIdx];
   t.tray[slotId]=c; closeModal(); renderTeams();
   beep(520,.1,'triangle',.12);
-  toast(`${t.name}: ${c.e} ${c.n} 획득! (푸드마일리지 +${c.m}점)`);
+  toast(`${t.name}: ${c.e} ${c.n} 획득! (${isHealth()?`건강등급 ${c.g}등급`:`푸드마일리지 +${c.m}점`})`);
   // 완성 확인
   if(!t.done && SLOTS.every(s=>t.tray[s.id])){
     t.done=true; doneOrder.push(t.idx); t.doneRank=doneOrder.length;
@@ -1018,7 +1018,7 @@ window.placeCard=function(c,slotId){
         <span class="eyebrow eco">식판 완성</span>
         <div class="big-emoji">🍽️🎉</div>
         <h2 style="text-align:center">${t.name} 식판 완성! ${t.doneRank}번째로 완성했어요!</h2>
-        <p style="text-align:center">완성 순서는 점수에 영향을 주지 않아요. 최종 점수는 <b>카드 푸드마일리지 합</b>으로 계산돼요!<br>
+        <p style="text-align:center">완성 순서는 점수에 영향을 주지 않아요. 최종 점수는 <b>카드 ${isHealth()?'건강등급':'푸드마일리지'} 합</b>으로 계산돼요!<br>
         ${teams.every(x=>x.done)?'모든 팀이 완성했어요! 점수를 계산합니다.':'다른 팀들은 계속 도전해요!'}</p>
         <div class="actions"><button class="btn pink big" onclick="closeModal();afterDone()">확인</button></div>`);
     },600);
