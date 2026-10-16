@@ -224,14 +224,26 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
 .tq-opt{font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
 .tq-opt.ans{color:var(--safe-deep); font-weight:700;}
 
-/* 카드 고르기 제한시간 */
-.pick-timer-row{display:flex; align-items:center; gap:10px; margin:8px 0 2px; flex-wrap:wrap;}
+/* 제한시간 표시: 스크롤을 내려도 항상 보이도록 모달 위쪽에 고정 */
+.pick-timer-row{
+  position:sticky; top:0; z-index:5;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:8px -28px 2px; padding:10px 28px;
+  background:rgba(255,255,255,.96); backdrop-filter:blur(3px);
+  border-bottom:2px solid #E5EDF5;
+}
 .pick-timer{
   font-family:'Jua'; font-size:20px; color:#fff; background:var(--ring-blue-deep);
-  border-radius:999px; padding:4px 18px; min-width:86px; text-align:center;
+  border-radius:999px; padding:4px 18px; min-width:86px; text-align:center; flex:none;
 }
+.pick-timer-msg{font-size:12.5px; color:var(--ink-soft); flex:1; min-width:150px;}
 .pick-timer.hurry{background:var(--t1); animation:pulse .5s ease-in-out infinite alternate;}
 @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.09)}}
+@media (max-width:620px){
+  .pick-timer-row{margin-left:-16px; margin-right:-16px; padding-left:16px; padding-right:16px;}
+  .pick-timer{font-size:17px; min-width:74px;}
+  .pick-timer-msg{font-size:11.5px; min-width:120px;}
+}
 
 /* 팀 수 선택 */
 .count-row{display:flex; gap:8px; margin:6px 0 12px; flex-wrap:wrap;}
@@ -871,10 +883,22 @@ function openQuiz(kind){
   openModal(`
     <span class="eyebrow ${kind==='E'?'eco':''}">${kind==='H'?'🍎 건강 식생활 퀴즈':'🌍 저탄소·환경 퀴즈'}</span>
     <h2>${q.q}</h2>
-    <p style="font-size:14px;color:var(--ink-soft)">${t.name}이(가) 정답을 맞히면 <b>원하는 카드</b>, 틀리면 <b>랜덤 카드</b>!</p>
+    ${timerBarHTML(QUIZ_SECONDS, `${QUIZ_SECONDS}초 안에 답을 고르지 못하면 <b>오답</b>으로 처리돼요!`)}
+    <p style="font-size:14px;color:var(--ink-soft)">${t.name}이(가) 정답을 맞히면 <b>원하는 카드</b>, 틀리면 <b>푸드마일리지가 가장 높은 카드</b>!</p>
     <div class="opts">${q.o.map((o,i)=>`<button class="opt-btn" onclick="answerQuiz(this,${i},${q.a})">${o}</button>`).join('')}</div>`);
+  startPickTimer(QUIZ_SECONDS, ()=>quizTimeout(q.a));
+}
+// 제한시간 안에 답을 고르지 못하면 오답과 똑같이 처리해요.
+function quizTimeout(a){
+  document.querySelectorAll('.opt-btn').forEach(b=>b.style.pointerEvents='none');
+  const correct=document.querySelectorAll('.opt-btn')[a];
+  if(correct) correct.classList.add('correct');
+  const el=$('#pickTimer');
+  if(el){ el.textContent='⏰ 시간 초과!'; el.classList.add('hurry'); }
+  setTimeout(()=>randomCard(`⏰ 시간 초과! 푸드마일리지가 가장 높은 카드를 받아요.`,0,true),1400);
 }
 window.answerQuiz=function(btn,i,a){
+  stopPickTimer();
   document.querySelectorAll('.opt-btn').forEach(b=>b.style.pointerEvents='none');
   if(i===a){
     btn.classList.add('correct'); beep(660,.15,'triangle',.15); setTimeout(()=>beep(880,.2,'triangle',.15),130);
@@ -924,40 +948,46 @@ window.startCount=function(btn){
 
 /* ══════════════════ 카드 획득/배치 ══════════════════ */
 function emptySlotsFor(t,cat){return SLOTS.filter(s=>s.cats.includes(cat) && !t.tray[s.id]);}
-// 카드 고르기 제한시간(5초) 타이머
-const PICK_SECONDS=5;
-let pickTimer=null;
-function stopPickTimer(){ if(pickTimer){ clearInterval(pickTimer); pickTimer=null; } }
-function startPickTimer(){
+// 제한시간 타이머: 카드 고르기와 퀴즈에서 함께 써요.
+const PICK_SECONDS=7;
+const QUIZ_SECONDS=7;
+let countTimer=null;
+function stopPickTimer(){ if(countTimer){ clearInterval(countTimer); countTimer=null; } }
+function timerBarHTML(seconds,msg){
+  return `<div class="pick-timer-row">
+      <span class="pick-timer" id="pickTimer">⏱️ ${seconds}초</span>
+      <span class="pick-timer-msg">${msg}</span>
+    </div>`;
+}
+function startPickTimer(seconds,onTimeout){
   stopPickTimer();
-  let left=PICK_SECONDS;
+  let left=seconds;
   const paint=()=>{
     const el=$('#pickTimer');
     if(!el) return false;
     el.textContent=`⏱️ ${left}초`;
-    el.classList.toggle('hurry', left<=2);
+    el.classList.toggle('hurry', left<=3);
     return true;
   };
   if(!paint()) return;
-  pickTimer=setInterval(()=>{
+  countTimer=setInterval(()=>{
     left--;
     if(left>0){ paint(); beep(520,.07,'sine',.09); return; }
     stopPickTimer();
     beep(240,.3,'sawtooth',.12);
-    timeoutCard();
+    onTimeout();
   },1000);
 }
 // 시간 안에 고르지 못하면 점수가 중간 수준인 카드를 받아요.
 function timeoutCard(){
-  const metric=cardScore;
   const [lo,hi]=[3,6];
-  let pool=CARDS.filter(c=>!isTaken(c) && metric(c)>=lo && metric(c)<=hi);
+  let pool=CARDS.filter(c=>!isTaken(c) && cardScore(c)>=lo && cardScore(c)<=hi);
   if(!pool.length) pool=CARDS.filter(c=>!isTaken(c));
   if(!pool.length) pool=CARDS;
   const c=pool[Math.floor(Math.random()*pool.length)];
   openModal(`
     <span class="eyebrow warn">시간 초과</span>
-    <h2 style="text-align:center;font-size:21px">⏰ 5초가 지났어요! 중간 점수 카드를 받아요.</h2>
+    <h2 style="text-align:center;font-size:21px">⏰ ${PICK_SECONDS}초가 지났어요! 중간 점수 카드를 받아요.</h2>
     ${cardBackHTML(c)}
     <div class="actions"><button class="btn orange big" onclick='gotCard(${JSON.stringify(c)})'>카드 받기</button></div>`);
 }
@@ -967,10 +997,7 @@ window.openCardPicker=function(title){
   openModal(`
     <span class="eyebrow">음식 카드 고르기</span>
     <h2 style="font-size:21px">${title}</h2>
-    <div class="pick-timer-row">
-      <span class="pick-timer" id="pickTimer">⏱️ ${PICK_SECONDS}초</span>
-      <span style="font-size:12.5px;color:var(--ink-soft)">${PICK_SECONDS}초 안에 못 고르면 <b>중간 점수 카드</b>를 받아요!</span>
-    </div>
+    ${timerBarHTML(PICK_SECONDS, `${PICK_SECONDS}초 안에 못 고르면 <b>중간 점수 카드</b>를 받아요!`)}
     <p style="font-size:13px;color:var(--ink-soft)">🔍 카드를 고르면 뒷면에서 <b>푸드마일리지와 건강등급</b>을 확인할 수 있어요! 한 번 선택된 카드는 다른 팀이 고를 수 없어요.</p>
     <div class="card-grid">
       ${cats.map(cat=>{
@@ -989,7 +1016,7 @@ window.openCardPicker=function(title){
           }).join('');
       }).join('')}
     </div>`);
-  startPickTimer();
+  startPickTimer(PICK_SECONDS, timeoutCard);
 };
 // 카드 뒷면: 건강 모드에서는 푸드마일리지 정보를 감추고 건강등급만 보여줘요.
 function cardBackHTML(c){
@@ -1195,6 +1222,7 @@ window.showRules=function(fromSetup){
       <ul>
         <li>🎯 <b>가운데 주황 원</b>: 원하는 음식 카드를 바로 획득!</li>
         <li>🟩 <b>안쪽 초록 원</b>: 저탄소·환경 퀴즈 / ⬜ <b>바깥 흰 링</b>: 건강 식생활 퀴즈 — 맞히면 원하는 카드, 틀리면 <b>푸드마일리지가 가장 높은 카드</b>를 받아요</li>
+        <li>⏱️ 퀴즈는 <b>7초 안에</b> 답을 골라야 해요. 시간이 지나면 오답으로 처리돼요!</li>
         <li>💪 <b>네 모서리</b>: 몸으로 하는 미션(가위바위보·스쿼트·런지·색깔 채소 말하기) — 성공하면 원하는 카드, 실패하면 <b>푸드마일리지 5점 이상인 랜덤 카드</b></li>
         <li>⚠️ <b>경고 구역</b>: 남은 카드 중 푸드마일리지가 가장 높은 카드를 받아요!</li>
         <li>🌱 <b>안심 구역</b>(아래쪽 얇은 띠): 카드도 점수도 없어요. 다음 트럭으로 다시 도전!</li>
@@ -1202,7 +1230,7 @@ window.showRules=function(fromSetup){
       <h3>3. 카드 뒤집고 식판 완성하기</h3>
       <ul>
         <li>음식 카드는 앞면에 <b>그림과 이름(주 재료 원산지)</b>만 보여요. 카드를 고르면 뒷면에서 <b>푸드마일리지와 건강등급</b>이 공개돼요!</li>
-        <li>⏱️ 카드는 <b>5초 안에</b> 골라야 해요. 시간이 지나면 <b>중간 점수 카드</b>를 받게 돼요!</li>
+        <li>⏱️ 카드는 <b>7초 안에</b> 골라야 해요. 시간이 지나면 <b>중간 점수 카드</b>를 받게 돼요!</li>
         <li>한 번 선택된 카드는 <b>다른 팀이 고를 수 없어요</b>. 먼저 고르는 팀이 임자!</li>
         <li>식판 6칸: 밥 · 국 · 나물반찬 · 김치 · 단백질반찬 · 후식</li>
         <li>식판을 먼저 완성해도 <b>남은 트럭은 모두 던져요</b>. 모든 팀이 트럭을 다 쓰면 게임이 끝나요.</li>
