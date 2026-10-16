@@ -499,7 +499,8 @@ const W=620,H=940, WALL_L=20, WALL_R=600;
 // 안심 구역은 트럭이 잘 걸리지 않도록 얇게, 경고 구역은 기존 크기 유지
 const WARN_T=30, WARN_B=130, HOUSE_B=772, SAFE_B=800;
 // 저탄소 퀴즈(안쪽 초록 원)와 건강 식생활 퀴즈(바깥 흰 링)를 넓게, 모서리 미션은 작게
-const CX=310, CY=415, R_CENTER=65, R_INNER=175, R_BLUE=262;
+// 원 중심은 하우스 영역(경고 구역 아래~안심 구역 위)의 한가운데에 두어 위아래 모서리 공간을 같게
+const CX=310, CY=451, R_CENTER=65, R_INNER=175, R_BLUE=262;
 const HACK={x:310,y:875}, STONE_R=17;
 
 /* ══════════════════ 상태 ══════════════════ */
@@ -691,8 +692,8 @@ function drawBoard(){
   // 모서리 미션
   txt('✌️ 선생님을 이겨라!', 110, 158, 13, '#2B3A55');
   txt('💪 스쿼트 10개!', 505, 158, 13, '#2B3A55');
-  txt('🦵 런지 10개!', 100, 690, 13, '#2B3A55');
-  txt('🫑 색깔 채소 말하기!', 500, 690, 13, '#2B3A55');
+  txt('🦵 런지 10개!', 100, 742, 13, '#2B3A55');
+  txt('🫑 색깔 채소 말하기!', 500, 742, 13, '#2B3A55');
   // 스타트 구역
   ctx.fillStyle='#E8F4FC'; ctx.fillRect(WALL_L,SAFE_B,WALL_R-WALL_L,H-20-SAFE_B);
   ctx.setLineDash([8,6]); ctx.strokeStyle='#9BC5DF';
