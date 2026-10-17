@@ -59,7 +59,7 @@ header .spacer{flex:1;}
 /* ── 레이아웃 ─────────────────────── */
 main{
   max-width:1280px; margin:0 auto 40px; padding:0 18px;
-  display:grid; grid-template-columns:minmax(360px, 560px) 1fr; gap:20px; align-items:start;
+  display:grid; grid-template-columns:minmax(360px, 560px) 1fr; gap:20px; align-items:stretch;
 }
 @media (max-width:980px){ main{grid-template-columns:1fr;} }
 
@@ -74,19 +74,21 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
 .hint b{color:var(--ink);}
 
 /* ── 팀 패널 ─────────────────────── */
-.side{display:flex; flex-direction:column; gap:14px;}
+/* 식판이 게임판 높이에 맞춰 늘어나도록 */
+.side{display:flex; flex-direction:column; gap:14px; min-height:0;}
 .turn-banner{
   background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
   padding:12px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
 }
 .turn-banner .who{font-family:'Jua'; font-size:22px;}
 .turn-banner .end-info{margin-left:auto; font-size:13px; color:var(--ink-soft);}
-.teams{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.teams{display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; min-height:0; align-content:stretch;}
 @media (max-width:560px){ .teams{grid-template-columns:1fr;} }
 .team-card{
   background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
   padding:12px 14px; border:3px solid transparent; transition:border-color .2s, transform .2s;
   position:relative; overflow:hidden;
+  display:flex; flex-direction:column; min-height:0;
 }
 .team-card.active{border-color:var(--tc); transform:translateY(-2px);}
 .team-card.done::after{
@@ -110,11 +112,12 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
   grid-template-areas:
     "namul kimchi dess prot"
     "rice  rice  soup soup";
+  flex:1; min-height:132px; max-height:380px;
 }
 .slot{
   background:#fff; border:2px solid #C3CEDA; border-radius:10px;
-  min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  font-size:10px; color:#8CA0B8; text-align:center; padding:2px; line-height:1.25;
+  min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  font-size:clamp(10px,1.05vw,13px); color:#8CA0B8; text-align:center; padding:2px; line-height:1.3;
   box-shadow:inset 0 2px 5px rgba(43,58,85,.12);
 }
 .slot[data-slot="rice"]{grid-area:rice;}
@@ -123,9 +126,9 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
 .slot[data-slot="prot"]{grid-area:prot;}
 .slot[data-slot="kimchi"]{grid-area:kimchi;}
 .slot[data-slot="dess"]{grid-area:dess;}
-.slot .em{font-size:17px; line-height:1;}
+.slot .em{font-size:clamp(17px,2.2vw,30px); line-height:1;}
 .slot.filled{border-style:solid; border-color:var(--tc); background:#FDFEFF; color:var(--ink); box-shadow:inset 0 2px 5px rgba(43,58,85,.06), 0 0 0 2px var(--tc) inset;}
-.slot.filled .mile-tag{font-size:9px; color:var(--ink-soft);}
+.slot.filled .mile-tag{font-size:clamp(9px,.95vw,12px); color:var(--ink-soft);}
 
 /* ── 모달 ─────────────────────────── */
 .overlay{
