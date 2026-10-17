@@ -227,6 +227,33 @@ canvas#board{width:100%; height:auto; display:block; border-radius:12px; touch-a
 .tq-opts{margin:4px 0 0 29px; display:flex; flex-direction:column; gap:2px;}
 .tq-opt{font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
 .tq-opt.ans{color:var(--safe-deep); font-weight:700;}
+/* 교사용: 음식 카드 목록 */
+.tc-sum{font-size:12.5px; color:var(--ink-soft); line-height:1.6;}
+.tc-cat{
+  font-family:'Jua'; font-size:15px; color:var(--ink); margin:14px 0 4px;
+  padding-bottom:3px; border-bottom:2px solid #E5EDF5;
+}
+.tc-cat small{color:var(--ink-soft); font-size:12px;}
+table.tc-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+table.tc-table th{
+  font-family:'Jua'; font-weight:400; background:#F2F8FC; color:var(--ink-soft);
+  padding:5px 4px; border-bottom:1.5px solid #E5EDF5; white-space:nowrap;
+}
+table.tc-table td{padding:5px 4px; border-bottom:1px solid #EEF3F8; text-align:center; color:var(--ink-soft);}
+table.tc-table td.fd{text-align:left; font-weight:600; color:var(--ink); white-space:nowrap;}
+table.tc-table .mi,table.tc-table .gr{
+  display:inline-block; font-family:'Jua'; font-size:11px; color:#fff;
+  border-radius:999px; padding:1px 8px; background:var(--ink);
+}
+table.tc-table .mi.low{background:var(--safe);}
+table.tc-table .mi.mid{background:var(--orange);}
+table.tc-table .mi.high{background:var(--t1);}
+table.tc-table .gr.g1{background:#3E8E4A;} table.tc-table .gr.g2{background:#7FAE3E;}
+table.tc-table .gr.g3{background:#E8A400;} table.tc-table .gr.g4{background:#E07B39;}
+table.tc-table .gr.g5{background:#D64545;}
+@media (max-width:620px){
+  table.tc-table{font-size:11px;} table.tc-table th,table.tc-table td{padding:4px 2px;}
+}
 
 /* 제한시간 표시: 스크롤을 내려도 항상 보이도록 모달 위쪽에 고정 */
 .pick-timer-row{
@@ -1266,18 +1293,47 @@ function quizListHTML(list){
       </div>
     </div>`).join('');
 }
+// 음식 카드 목록: 분류별로 묶고 푸드마일리지가 낮은 음식부터 정리해요.
+function cardListHTML(){
+  const cats=['밥','국','나물반찬','김치','단백질반찬','후식'];
+  const all=[...CARDS].sort((a,b)=>a.m-b.m);
+  const avg=(all.reduce((s,c)=>s+c.m,0)/all.length).toFixed(1);
+  return `
+    <p class="tc-sum">전체 <b>${CARDS.length}장</b> · 푸드마일리지 평균 <b>${avg}점</b> ·
+      가장 낮음 <b>${all[0].n}(${all[0].m}점)</b> · 가장 높음 <b>${all[all.length-1].n}(${all[all.length-1].m}점)</b></p>
+    <p class="tc-sum" style="margin-top:2px">🚚 점수는 <b>생산지에서 전북 전주까지의 이동 거리</b>를 1~10점으로 나타낸 값이에요. 건강등급은 1등급에 가까울수록 건강한 음식이에요.</p>
+    ${cats.map(cat=>{
+      const list=CARDS.filter(c=>c.c===cat).sort((a,b)=>a.m-b.m||a.g-b.g);
+      return `
+      <div class="tc-cat">${CAT_EMOJI[cat]} ${cat} <small>(${list.length}장)</small></div>
+      <table class="tc-table">
+        <tr><th>음식</th><th>원산지</th><th>이동거리</th><th>🚚 마일리지</th><th>건강등급</th></tr>
+        ${list.map(c=>`
+          <tr>
+            <td class="fd">${c.e} ${c.n}</td>
+            <td>${c.o}</td>
+            <td>${c.km}</td>
+            <td><span class="mi ${mileClass(c.m)}">${c.m}</span></td>
+            <td><span class="gr g${c.g}">${c.g}</span></td>
+          </tr>`).join('')}
+      </table>`;
+    }).join('')}`;
+}
 window.showTeacher=function(tab){
   teacherTab=tab||teacherTab;
-  const eco=teacherTab==='eco';
+  const titles={eco:'🌍 저탄소·환경 퀴즈 목록과 정답', health:'🍎 건강 식생활 퀴즈 목록과 정답', cards:'🍱 음식 카드 목록과 푸드마일리지'};
   openModal(`
     <span class="eyebrow eco">교사용 자료</span>
-    <h2>👩‍🏫 퀴즈 목록과 정답</h2>
-    <p style="font-size:13px;color:var(--ink-soft)">수업 중 정답 확인용이에요. 학생 화면에서는 보이지 않아요.</p>
+    <h2>👩‍🏫 ${titles[teacherTab]}</h2>
+    <p style="font-size:13px;color:var(--ink-soft)">수업 중 참고용이에요. 학생 화면에서는 보이지 않아요.</p>
     <div class="tabs">
-      <button class="tab-btn ${eco?'on':''}" onclick="showTeacher('eco')">🌍 저탄소·환경 퀴즈 (${QUIZ_ECO.length})</button>
-      <button class="tab-btn ${eco?'':'on'}" onclick="showTeacher('health')">🍎 건강 식생활 퀴즈 (${QUIZ_HEALTH.length})</button>
+      <button class="tab-btn ${teacherTab==='eco'?'on':''}" onclick="showTeacher('eco')">🌍 저탄소 퀴즈 (${QUIZ_ECO.length})</button>
+      <button class="tab-btn ${teacherTab==='health'?'on':''}" onclick="showTeacher('health')">🍎 건강 퀴즈 (${QUIZ_HEALTH.length})</button>
+      <button class="tab-btn ${teacherTab==='cards'?'on':''}" onclick="showTeacher('cards')">🍱 음식 카드 (${CARDS.length})</button>
     </div>
-    <div class="teacher-box">${quizListHTML(eco?QUIZ_ECO:QUIZ_HEALTH)}</div>
+    <div class="teacher-box">${
+      teacherTab==='cards' ? cardListHTML() : quizListHTML(teacherTab==='eco'?QUIZ_ECO:QUIZ_HEALTH)
+    }</div>
     <div class="actions"><button class="btn orange big" onclick="closeModal()">닫기</button></div>`);
 };
 
