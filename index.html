@@ -516,7 +516,7 @@ const QUIZ_ECO = [
   {q:'급식에서 음식을 남기지 않으면 좋은 점은 무엇일까요?',o:['① 음식물 쓰레기가 줄어 환경에 도움이 된다','② 설거지를 못 하게 된다','③ 다음 날 급식이 사라진다','④ 배가 더 고파진다'],a:0},
   {q:'같은 바나나라도 푸드마일리지 점수가 달라지는 까닭은 무엇일까요?',o:['① 어느 나라에서 왔는지에 따라 이동 거리가 다르기 때문','② 바나나의 개수가 다르기 때문','③ 먹는 사람이 다르기 때문','④ 껍질 색이 다르기 때문'],a:0},
   {q:'다음 중 푸드마일리지를 줄이는 행동은 무엇일까요?',o:['① 가까운 곳에서 생산된 식재료 고르기','② 먼 나라에서 비행기로 온 과일만 고르기','③ 음식을 많이 남기기','④ 포장을 여러 겹으로 하기'],a:0},
-  {q:'식판에 담은 음식의 푸드마일리지 점수는 어떻게 구할까요?',o:['① 담은 음식 카드의 점수를 모두 더한다','② 가장 큰 점수 하나만 쓴다','③ 점수를 모두 곱한다','④ 음식의 개수만 센다'],a:0},
+  {q:'체리의 푸드마일리지 점수가 높은 까닭은 무엇일까요?',o:['① 칠레에서 우리나라까지 아주 먼 거리를 이동해 왔기 때문','② 체리의 색이 빨갛기 때문','③ 체리의 크기가 작기 때문','④ 체리를 조금만 먹기 때문'],a:0},
   {q:'저탄소 급식을 실천하는 가장 좋은 방법은 무엇일까요?',o:['① 가까운 지역 식재료로 만든 음식을 남기지 않고 먹기','② 먼 나라 음식만 골라 먹기','③ 먹을 만큼보다 훨씬 많이 받기','④ 반찬을 모두 남기기'],a:0},
   {q:'건강에도 좋고 환경에도 좋은 선택은 무엇일까요?',o:['① 가까운 곳에서 온 제철 채소와 과일을 골고루 먹기','② 과자와 탄산음료만 먹기','③ 먼 나라에서 온 가공식품만 먹기','④ 음식을 많이 남기기'],a:0},
   {q:'로컬푸드(지역 먹거리)란 무엇일까요?',o:['① 우리가 사는 지역에서 생산된 먹거리','② 외국에서 수입한 먹거리','③ 공장에서만 만든 먹거리','④ 오래 보관한 냉동식품'],a:0},
@@ -547,7 +547,7 @@ const CX=310, CY=451, R_CENTER=65, R_INNER=175, R_BLUE=262;
 const HACK={x:310,y:875}, STONE_R=17;
 
 /* ══════════════════ 상태 ══════════════════ */
-// 점수 기준: 카드 푸드마일리지 합 + 빈 칸 패널티 − 탄소저감 보너스
+// 점수 기준: 카드 푸드마일리지 합 + 빈 칸 패널티
 const cardScore=c=>c.m;      // 카드 한 장의 푸드마일리지 점수
 const BAD_THRESHOLD=5;        // 미션 실패 시 받는 카드의 최소 마일리지
 let teamCount=4; // 학급 상황에 따라 2~4팀
@@ -630,7 +630,7 @@ window.startGame=function(){
   const names=Array.from({length:teamCount},(_,i)=>($('#tn'+i)?.value.trim()||`${i+1}팀`));
   teams=names.map((n,i)=>({
     name:n, color:TEAM_COLORS[i], idx:i, stonesLeft:STONES_PER_END,
-    tray:Object.fromEntries(SLOTS.map(s=>[s.id,null])), done:false, doneRank:0, carbonKO:0,
+    tray:Object.fromEntries(SLOTS.map(s=>[s.id,null])), done:false, doneRank:0,
   }));
   stones=[]; doneOrder=[]; curIdx=0; takenCardIds=new Set();
   quizPoolH=shuffle([...QUIZ_HEALTH]); quizPoolE=shuffle([...QUIZ_ECO]);
@@ -674,7 +674,7 @@ function updateTurnUI(){
 /* ══════════════════ 스톤(트럭) ══════════════════ */
 function spawnStone(){
   const t=teams[curIdx];
-  curStone={x:HACK.x,y:HACK.y,vx:0,vy:0,ang:-Math.PI/2,team:curIdx,out:false,thrown:false,hitByTeam:null};
+  curStone={x:HACK.x,y:HACK.y,vx:0,vy:0,ang:-Math.PI/2,team:curIdx,out:false,thrown:false};
   stones.push(curStone);
 }
 function drawTruck(s){
@@ -792,15 +792,7 @@ function physicsStep(){
       // 아웃 판정 (좌/우/위)
       if(s.x<WALL_L-STONE_R||s.x>WALL_R+STONE_R||s.y<WARN_T-STONE_R){
         s.out=true; s.vx=0; s.vy=0;
-        const ko = s.hitByTeam!==null && s.hitByTeam!==s.team;
-        if(ko){
-          teams[s.hitByTeam].carbonKO++;
-          toast(`${teams[s.hitByTeam].name}이(가) ${teams[s.team].name} 트럭을 쳐서 밖으로! 🌍 탄소저감 보너스 −1점!`);
-        } else if(ko){
-          toast(`${teams[s.hitByTeam].name}이(가) ${teams[s.team].name} 트럭을 밖으로 밀어냈어요! 🚧`);
-        } else {
-          toast(`${teams[s.team].name} 트럭이 밖으로 나갔어요! 🚧`);
-        }
+        toast(`${teams[s.team].name} 트럭이 밖으로 나갔어요! 🚧`);
       }
       // 아래쪽 벽은 살짝 튕김
       if(s.y>H-20-STONE_R){ s.y=H-20-STONE_R; s.vy*=-0.4; }
@@ -820,7 +812,6 @@ function physicsStep(){
           a.vx-=dv*nx; a.vy-=dv*ny;
           b.vx+=dv*nx; b.vy+=dv*ny;
           if(dv>1.5) beep(180+Math.random()*60,.06,'square',.1);
-          if(a.team!==b.team){ a.hitByTeam=b.team; b.hitByTeam=a.team; }
         }
       }
     }
@@ -1116,7 +1107,7 @@ window.placeCard=function(c,slotId){
   // 식판을 완성해도 안내 창은 띄우지 않고 축하 효과와 알림만 보여줘요.
   if(!t.done && SLOTS.every(s=>t.tray[s.id])){
     t.done=true; doneOrder.push(t.idx); t.doneRank=doneOrder.length;
-    confetti(); beep(700,.15,'triangle',.15); setTimeout(()=>beep(940,.25,'triangle',.15),160);
+    beep(700,.15,'triangle',.15); setTimeout(()=>beep(940,.25,'triangle',.15),160);
     toast(`🎉 ${t.name} 식판 완성! ${t.stonesLeft>0?`남은 트럭 ${t.stonesLeft}대도 모두 던져요.`:'트럭을 모두 던졌어요.'}`,2600);
   } else {
     toast(`${t.name}: ${c.e} ${c.n} 획득! (푸드마일리지 +${c.m}점)`);
@@ -1147,10 +1138,9 @@ function finishGame(){
     const emptyPenalty=emptyN*10;
     const mile=trayMileage(t);
     const grade=trayGrades(t);
-    const carbonBonus=t.carbonKO;
     const gradeFinal=grade+emptyPenalty;
-    return {t, emptyN, emptyPenalty, mile, grade, carbonBonus, gradeFinal,
-            final: mile+emptyPenalty-carbonBonus};
+    return {t, emptyN, emptyPenalty, mile, grade, gradeFinal,
+            final: mile+emptyPenalty};
   });
   confetti();
   openModal(`
@@ -1158,28 +1148,16 @@ function finishGame(){
     <div class="winner-line">🏁 게임이 종료되었습니다!</div>
     <p style="text-align:center;font-size:14px;color:var(--ink-soft)">모두 수고했어요! 우리 식판의 <b>푸드마일리지</b>를 함께 살펴봐요. 점수가 낮을수록 가까운 곳에서 온 음식이에요 🌍</p>
     <table class="result">
-      <tr><th>팀</th><th>카드<br>마일리지</th><th>미완성<br>칸(+10)</th><th>🌍탄소저감<br>(−1)</th><th>최종점수</th></tr>
+      <tr><th>팀</th><th>카드<br>마일리지</th><th>미완성<br>칸(+10)</th><th>최종점수</th></tr>
       ${rows.map(r=>`
         <tr>
           <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}${r.t.done?'':' <small>(미완성)</small>'}</td>
           <td>${r.mile}</td>
           <td>${r.emptyN?`+${r.emptyPenalty} <small>(${r.emptyN}칸)</small>`:'0'}</td>
-          <td>${r.carbonBonus?`−${r.carbonBonus}`:'0'}</td>
           <td class="total">${r.final}</td>
         </tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등수는 매기지 않아요. 채우지 못한 칸은 하나당 <b>+10점</b>이 더해지고, 상대 트럭을 맞혀 보드 밖으로 내보내면 <b>탄소저감 보너스 −1점</b>이 빠져요.</p>
-    <h3 style="margin:18px 0 6px; font-size:16px; color:var(--ring-blue-deep)">🌍 탄소저감보너스 기록</h3>
-    <table class="result">
-      <tr><th>팀</th><th>상대 트럭 아웃시킨 횟수</th><th>보너스</th></tr>
-      ${rows.map(r=>`
-        <tr>
-          <td style="color:${r.t.color};font-family:'Jua'">${r.t.name}</td>
-          <td>${r.t.carbonKO}회</td>
-          <td class="total">${r.carbonBonus?'−'+r.carbonBonus:'0'}</td>
-        </tr>`).join('')}
-    </table>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 상대 팀의 트럭을 맞혀서 보드 밖으로 내보낼 때마다 푸드마일리지에서 <b>−1점</b>씩 깎여요. 🌱</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:8px">※ 등수는 매기지 않아요. 채우지 못한 칸은 하나당 <b>+10점</b>이 더해져요.</p>
     <h3 style="margin:18px 0 6px; font-size:16px; color:var(--safe-deep)">🥗 건강등급 기록</h3>
     <table class="result">
       <tr><th>팀</th><th>카드<br>등급 합</th><th>미완성<br>칸(+10)</th><th>최종<br>등급 점수</th></tr>
@@ -1238,7 +1216,6 @@ window.showRules=function(fromSetup){
       <ul>
         <li><b>2~4개 팀</b>이 차례대로 <b>트럭 스톤(팀당 6대)</b>을 발사해요. 팀 수는 시작 화면에서 고를 수 있어요.</li>
         <li>트럭을 누른 채 <b>아래로 당겼다 놓으면</b> 반대 방향으로 슝! 다른 팀 트럭을 밀어낼 수도 있어요.</li>
-        <li>🌍 <b>탄소저감 보너스</b>: 내 트럭으로 상대 팀 트럭을 맞혀서 보드 밖으로 내보내면, 최종 점수에서 <b>−1점</b>을 깎아주는 보너스를 받아요!</li>
       </ul>
       <h3>2. 멈춘 자리에서 이벤트!</h3>
       <ul>
@@ -1261,7 +1238,6 @@ window.showRules=function(fromSetup){
       <ul>
         <li>식판에 모은 카드의 <b>푸드마일리지 점수 합</b>을 함께 살펴봐요.</li>
         <li>게임이 끝났을 때 <b>채우지 못한 칸</b>은 하나당 <b>+10점</b>이 더해져요.</li>
-        <li>상대 트럭을 맞혀 보드 밖으로 내보낸 횟수만큼 <b>탄소저감 보너스 −1점</b>씩 빠져요.</li>
         <li>결과 화면에는 <b>건강등급 기록</b>도 함께 보여줘요.</li>
         <li><b>등수는 매기지 않아요.</b> 팀마다 어떤 선택을 했는지 함께 비교하며 이야기 나눠 보세요.</li>
         <li>결과 화면 맨 아래에서 <b>팀별로 고른 음식</b>을 모두 확인할 수 있어요.</li>
