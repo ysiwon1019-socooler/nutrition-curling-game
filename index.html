@@ -415,7 +415,7 @@ table.review-table .gr.g5{background:#D64545;}
 <script>
 'use strict';
 /* ══════════════════ 데이터 ══════════════════ */
-const TEAM_COLORS = ['#E45B5B','#4A8FDD','#57A85A','#9A67C6'];
+const TEAM_COLORS = ['#E03131','#1C6FD0','#2F9E44','#8B3DBF'];
 const STONES_PER_END = 6;
 
 // 식판 칸 (6칸: 밥/국/나물반찬/김치/단백질반찬/후식 각 1장)
@@ -558,7 +558,7 @@ const WARN_T=30, WARN_B=130, HOUSE_B=772, SAFE_B=800;
 // 저탄소 퀴즈(안쪽 초록 원)와 건강 식생활 퀴즈(바깥 흰 링)를 넓게, 모서리 미션은 작게
 // 원 중심은 하우스 영역(경고 구역 아래~안심 구역 위)의 한가운데에 두어 위아래 모서리 공간을 같게
 const CX=310, CY=451, R_CENTER=65, R_INNER=175, R_BLUE=262;
-const HACK={x:310,y:875}, STONE_R=17;
+const HACK={x:310,y:875}, STONE_R=34;
 
 /* ══════════════════ 상태 ══════════════════ */
 // 점수 기준: 카드 푸드마일리지 합 + 빈 칸 패널티
@@ -692,20 +692,26 @@ function spawnStone(){
   stones.push(curStone);
 }
 function drawTruck(s){
-  ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang);
   const c=teams[s.team].color;
+  const k=STONE_R/17;   // 기본 도안(반지름 17) 대비 배율
+  ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang); ctx.scale(k,k);
+  // 바닥 그림자 — 어느 배경에서나 트럭이 떠 보이게
+  ctx.fillStyle='rgba(43,58,85,.2)';
+  ctx.beginPath(); ctx.ellipse(0,12,17,6,0,0,7); ctx.fill();
+  // 흰 받침 — 초록 원 같은 색 배경 위에서도 또렷하게
+  ctx.fillStyle='#FFFFFF';
+  roundRect(-19,-14,38,27,8); ctx.fill();
   // 바퀴
-  ctx.fillStyle='#33404F';
-  ctx.beginPath(); ctx.arc(-8,10,4.5,0,7); ctx.arc(8,10,4.5,0,7); ctx.fill();
-  // 짐칸
-  ctx.fillStyle=c; ctx.strokeStyle='#fff'; ctx.lineWidth=2;
-  roundRect(-15,-10,20,19,3); ctx.fill(); ctx.stroke();
-  // 운전석
-  ctx.fillStyle='#FDFDFD';
-  roundRect(5,-6,11,15,3); ctx.fill(); ctx.strokeStyle=c; ctx.stroke();
-  ctx.fillStyle='#AEE2F8'; roundRect(8,-4,6,6,2); ctx.fill();
+  ctx.fillStyle='#2B3A55';
+  ctx.beginPath(); ctx.arc(-8,10,5,0,7); ctx.arc(8,10,5,0,7); ctx.fill();
+  // 짐칸 (팀 색)
+  ctx.strokeStyle='#2B3A55'; ctx.lineWidth=2;
+  ctx.fillStyle=c; roundRect(-16,-11,22,21,3); ctx.fill(); ctx.stroke();
+  // 운전석 (팀 색)
+  ctx.fillStyle=c; roundRect(5,-7,12,17,3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#EAF6FD'; roundRect(8,-5,7,8,2); ctx.fill();
   // 팀 번호
-  ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif';
+  ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(String(s.team+1), -5, 0);
   ctx.restore();
